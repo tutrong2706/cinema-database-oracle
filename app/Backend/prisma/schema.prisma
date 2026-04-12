@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model ap_dung {
+  MaVe                    String                  @unique(map: "MaVe") @db.VarChar(20)
+  MaKhuyenMai             String                  @db.VarChar(20)
+  ve_xem_phim             ve_xem_phim             @relation(fields: [MaVe], references: [MaVe], onDelete: NoAction, onUpdate: NoAction, map: "ap_dung_ibfk_1")
+  chuong_trinh_khuyen_mai chuong_trinh_khuyen_mai @relation(fields: [MaKhuyenMai], references: [MaKhuyenMai], onDelete: NoAction, onUpdate: NoAction, map: "ap_dung_ibfk_2")
+
+  @@id([MaVe, MaKhuyenMai])
+  @@index([MaKhuyenMai], map: "MaKhuyenMai")
+}
+
+model ca_lam_viec {
+  MaCa          String        @id @db.VarChar(20)
+  MaNguoiDung   String        @db.VarChar(20)
+  CaLamViec     String        @db.VarChar(50)
+  quan_tri_vien quan_tri_vien @relation(fields: [MaNguoiDung], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "ca_lam_viec_ibfk_1")
+
+  @@index([MaNguoiDung], map: "MaNguoiDung")
+}
+
+model chuong_trinh_khuyen_mai {
+  MaKhuyenMai    String    @id @db.VarChar(20)
+  TenChuongTrinh String    @db.VarChar(200)
+  DieuKien       String?   @db.VarChar(250)
+  NgayBatDau     DateTime  @db.Date
+  NgayKetThuc    DateTime  @db.Date
+  MucGiam        Decimal   @db.Decimal(18, 2)
+  ap_dung        ap_dung[]
+}
+
+model danh_gia {
+  MaDanhGia   String     @id @db.VarChar(20)
+  MaNguoiDung String     @db.VarChar(20)
+  MaPhim      String     @db.VarChar(20)
+  NoiDung     String?    @db.VarChar(1000)
+  NgayDang    DateTime   @db.DateTime(0)
+  DiemSo      Int
+  khach_hang  khach_hang @relation(fields: [MaNguoiDung], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "danh_gia_ibfk_1")
+  phim        phim       @relation(fields: [MaPhim], references: [MaPhim], onDelete: Cascade, onUpdate: NoAction, map: "danh_gia_ibfk_2")
+
+  @@index([MaNguoiDung], map: "MaNguoiDung")
+  @@index([MaPhim], map: "MaPhim")
+}
+
+model don_hang {
+  MaDonHang      String        @id @db.VarChar(20)
+  MaNguoiDung_KH String        @db.VarChar(20)
+  PhuongThuc     String        @db.VarChar(50)
+  ThoiGianDat    DateTime      @db.DateTime(0)
+  TongTien       Decimal       @db.Decimal(18, 2)
+  TrangThai      String        @db.VarChar(20)
+  khach_hang     khach_hang    @relation(fields: [MaNguoiDung_KH], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "don_hang_ibfk_1")
+  gom            gom[]
+  thanh_toan     thanh_toan?
+  ve_xem_phim    ve_xem_phim[]
+
+  @@index([MaNguoiDung_KH], map: "MaNguoiDung_KH")
+}
+
+model ghe {
+  MaPhong     String        @db.VarChar(20)
+  HangGhe     String        @db.VarChar(10)
+  SoGhe       Int
+  LoaiGhe     String        @db.VarChar(10)
+  phong_chieu phong_chieu   @relation(fields: [MaPhong], references: [MaPhong], onDelete: NoAction, onUpdate: NoAction, map: "ghe_ibfk_1")
+  ve_xem_phim ve_xem_phim[]
+
+  @@id([MaPhong, HangGhe, SoGhe])
+}
+
+model gom {
+  MaDonHang String   @db.VarChar(20)
+  MaHang    String   @db.VarChar(20)
+  SoLuong   Int
+  DonGia    Decimal  @db.Decimal(18, 2)
+  don_hang  don_hang @relation(fields: [MaDonHang], references: [MaDonHang], onDelete: NoAction, onUpdate: NoAction, map: "gom_ibfk_1")
+  mat_hang  mat_hang @relation(fields: [MaHang], references: [MaHang], onDelete: NoAction, onUpdate: NoAction, map: "gom_ibfk_2")
+
+  @@id([MaDonHang, MaHang])
+  @@index([MaHang], map: "MaHang")
+}
+
+model khach_hang {
+  MaNguoiDung   String        @id @db.VarChar(20)
+  LoaiThanhVien String        @db.VarChar(20)
+  DiemTichLuy   Int           @default(0)
+  danh_gia      danh_gia[]
+  don_hang      don_hang[]
+  tai_khoan     tai_khoan     @relation(fields: [MaNguoiDung], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "khach_hang_ibfk_1")
+  ve_xem_phim   ve_xem_phim[]
+}
+
+model mat_hang {
+  MaHang     String  @id @db.VarChar(20)
+  TenHang    String  @db.VarChar(200)
+  DonGia     Decimal @db.Decimal(18, 2)
+  SoLuongTon Int
+  MoTa       String? @db.VarChar(500)
+  LoaiHang   String  @db.VarChar(20)
+  gom        gom[]
+}
+
+model phim {
+  MaPhim        String          @id @db.VarChar(20)
+  TenPhim       String          @db.VarChar(200)
+  ThoiLuong     Int
+  NgonNgu       String          @db.VarChar(50)
+  QuocGia       String          @db.VarChar(50)
+  DaoDien       String?         @db.VarChar(100)
+  DienVienChinh String?         @db.VarChar(200)
+  NgayKhoiChieu DateTime        @db.Date
+  MoTaNoiDung   String?         @db.Text
+  DoTuoi        Int
+  ChuDePhim     String?         @db.VarChar(100)
+  Anh           String?         @db.VarChar(500)
+  danh_gia      danh_gia[]
+  suat_chieu    suat_chieu[]
+  the_loai_phim the_loai_phim[]
+  trinh_chieu   trinh_chieu[]
+}
+
+model phong_chieu {
+  MaPhong        String         @id @db.VarChar(20)
+  MaRapPhim      String         @db.VarChar(20)
+  Ten            String         @db.VarChar(20)
+  Loai           String         @db.VarChar(20)
+  SucChua        Int
+  SoGhe          Int
+  ghe            ghe[]
+  rap_chieu_phim rap_chieu_phim @relation(fields: [MaRapPhim], references: [MaRapPhim], onDelete: NoAction, onUpdate: NoAction, map: "phong_chieu_ibfk_1")
+  suat_chieu     suat_chieu[]
+
+  @@index([MaRapPhim], map: "MaRapPhim")
+}
+
+model quan_ly {
+  MaNguoiDung_QTV String         @db.VarChar(20)
+  MaRapPhim       String         @db.VarChar(20)
+  quan_tri_vien   quan_tri_vien  @relation(fields: [MaNguoiDung_QTV], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "quan_ly_ibfk_1")
+  rap_chieu_phim  rap_chieu_phim @relation(fields: [MaRapPhim], references: [MaRapPhim], onDelete: NoAction, onUpdate: NoAction, map: "quan_ly_ibfk_2")
+
+  @@id([MaNguoiDung_QTV, MaRapPhim])
+  @@index([MaRapPhim], map: "MaRapPhim")
+}
+
+model quan_tri_vien {
+  MaNguoiDung   String        @id @db.VarChar(20)
+  NgayBatDauLam DateTime      @db.Date
+  Luong         Decimal       @db.Decimal(18, 2)
+  ChucVu        String        @db.VarChar(50)
+  ca_lam_viec   ca_lam_viec[]
+  quan_ly       quan_ly[]
+  tai_khoan     tai_khoan     @relation(fields: [MaNguoiDung], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "quan_tri_vien_ibfk_1")
+}
+
+model rap_chieu_phim {
+  MaRapPhim   String        @id @db.VarChar(20)
+  Ten         String        @db.VarChar(20)
+  ThanhPho    String        @db.VarChar(25)
+  DiaChi      String        @db.VarChar(50)
+  SDT         String        @db.VarChar(15)
+  Email       String        @unique(map: "Email") @db.VarChar(50)
+  phong_chieu phong_chieu[]
+  quan_ly     quan_ly[]
+  trinh_chieu trinh_chieu[]
+}
+
+model suat_chieu {
+  MaSuatChieu String        @id @db.VarChar(20)
+  MaPhim      String        @db.VarChar(20)
+  MaPhong     String        @db.VarChar(20)
+  NgayChieu   DateTime      @db.Date
+  GioBatDau   DateTime      @db.Time(0)
+  GioKetThuc  DateTime      @db.Time(0)
+  GiaVeCoBan  Decimal       @db.Decimal(18, 2)
+  TrangThai   String        @db.VarChar(20)
+  phim        phim          @relation(fields: [MaPhim], references: [MaPhim], onDelete: Cascade, onUpdate: NoAction, map: "suat_chieu_ibfk_1")
+  phong_chieu phong_chieu   @relation(fields: [MaPhong], references: [MaPhong], onDelete: NoAction, onUpdate: NoAction, map: "suat_chieu_ibfk_2")
+  ve_xem_phim ve_xem_phim[]
+
+  @@index([MaPhim], map: "MaPhim")
+  @@index([MaPhong], map: "MaPhong")
+}
+
+model tai_khoan {
+  MaNguoiDung   String         @id @db.VarChar(20)
+  HoTen         String         @db.VarChar(50)
+  DiaChi        String?        @db.VarChar(200)
+  SDT           String?        @db.VarChar(15)
+  GioiTinh      String?        @db.Char(1)
+  Email         String         @unique(map: "Email") @db.VarChar(50)
+  MatKhau       String         @db.VarChar(50)
+  khach_hang    khach_hang?
+  quan_tri_vien quan_tri_vien?
+}
+
+model thanh_toan {
+  MaThanhToan   String   @id @db.VarChar(20)
+  MaDonHang     String   @unique(map: "MaDonHang") @db.VarChar(20)
+  NgayThanhToan DateTime @db.DateTime(0)
+  PhuongThuc    String   @db.VarChar(50)
+  TrangThai     String   @db.VarChar(20)
+  SoTien        Decimal  @db.Decimal(18, 2)
+  don_hang      don_hang @relation(fields: [MaDonHang], references: [MaDonHang], onDelete: NoAction, onUpdate: NoAction, map: "thanh_toan_ibfk_1")
+}
+
+model the_loai_phim {
+  MaPhim  String @db.VarChar(20)
+  TheLoai String @db.VarChar(50)
+  phim    phim   @relation(fields: [MaPhim], references: [MaPhim], onDelete: NoAction, onUpdate: NoAction, map: "the_loai_phim_ibfk_1")
+
+  @@id([MaPhim, TheLoai])
+}
+
+model trinh_chieu {
+  MaRapPhim      String         @db.VarChar(20)
+  MaPhim         String         @db.VarChar(20)
+  rap_chieu_phim rap_chieu_phim @relation(fields: [MaRapPhim], references: [MaRapPhim], onDelete: NoAction, onUpdate: NoAction, map: "trinh_chieu_ibfk_1")
+  phim           phim           @relation(fields: [MaPhim], references: [MaPhim], onDelete: NoAction, onUpdate: NoAction, map: "trinh_chieu_ibfk_2")
+
+  @@id([MaRapPhim, MaPhim])
+  @@index([MaPhim], map: "MaPhim")
+}
+
+model ve_xem_phim {
+  MaVe           String     @id @db.VarChar(20)
+  MaSuatChieu    String     @db.VarChar(20)
+  MaPhong        String     @db.VarChar(20)
+  HangGhe        String     @db.VarChar(10)
+  SoGhe          Int
+  MaNguoiDung_KH String     @db.VarChar(20)
+  MaDonHang      String     @db.VarChar(20)
+  GiaVeCuoi      Decimal    @db.Decimal(18, 2)
+  NgayDat        DateTime   @db.DateTime(0)
+  TrangThai      String     @db.VarChar(20)
+  ap_dung        ap_dung?
+  suat_chieu     suat_chieu @relation(fields: [MaSuatChieu], references: [MaSuatChieu], onDelete: Cascade, onUpdate: NoAction, map: "ve_xem_phim_ibfk_1")
+  ghe            ghe        @relation(fields: [MaPhong, HangGhe, SoGhe], references: [MaPhong, HangGhe, SoGhe], onDelete: NoAction, onUpdate: NoAction, map: "ve_xem_phim_ibfk_2")
+  khach_hang     khach_hang @relation(fields: [MaNguoiDung_KH], references: [MaNguoiDung], onDelete: NoAction, onUpdate: NoAction, map: "ve_xem_phim_ibfk_3")
+  don_hang       don_hang   @relation(fields: [MaDonHang], references: [MaDonHang], onDelete: NoAction, onUpdate: NoAction, map: "ve_xem_phim_ibfk_4")
+
+  @@index([MaSuatChieu], map: "MaSuatChieu")
+  @@index([MaDonHang], map: "MaDonHang")
+  @@index([MaNguoiDung_KH], map: "MaNguoiDung_KH")
+  @@index([MaPhong, HangGhe, SoGhe], map: "MaPhong")
+}
