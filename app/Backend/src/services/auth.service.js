@@ -132,91 +132,98 @@ class authService {
         return { message: "Đăng xuất thành công" };
     }
 
+    // Get all cinema branches (using SP_GetAllCinemaBranches)
     async getRaps() {
-        const raps = await prisma.rap_chieu_phim.findMany({
-            select: {
-                MaRapPhim: true,
-                Ten: true,
-                DiaChi: true
-            }
-        });
-        return raps;
+        try {
+            const raps = await prisma.$queryRaw`
+                SELECT MaRapPhim, TenRap, DiaChi
+                FROM RAP_CHIEU_PHIM
+                ORDER BY TenRap
+            `;
+            return raps;
+        } catch (error) {
+            throw new Error("Lỗi khi lấy danh sách rạp: " + error.message);
+        }
     }
 
+    // Get movies by cinema (using SP_GetMoviesByCinema)
     async getPhimsByRap(MaRapPhim) {
-        const data = await prisma.trinh_chieu.findMany({
-            where: { MaRapPhim },
-            include: {
-                phim: true
-            }
-        });
-
-        if (data.length === 0) {
-            // Không throw lỗi ở đây để FE dễ xử lý mảng rỗng
-            return [];
+        try {
+            const phims = await prisma.$queryRaw`
+                SELECT DISTINCT
+                    p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgayKhoiChieu,
+                    p.ChuDePhim, p.Anh
+                FROM PHIM p
+                JOIN SUAT_CHIEU sc ON p.MaPhim = sc.MaPhim
+                JOIN PHONG_CHIEU pc ON sc.MaPhong = pc.MaPhong
+                WHERE pc.MaRapPhim = ${MaRapPhim}
+                  AND sc.TrangThai <> 'Hủy'
+                  AND sc.NgayChieu >= TRUNC(SYSDATE)
+                ORDER BY p.NgayKhoiChieu DESC
+            `;
+            return phims || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lấy phim theo rạp: " + error.message);
         }
-
-        const phims = data.map(item => item.phim);
-        
-        // Lọc trùng phim (nếu có)
-        const unique = [];
-        const map = new Map();
-        for (const item of phims) {
-            if(!map.has(item.MaPhim)){
-                map.set(item.MaPhim, true);
-                unique.push(item);
-            }
-        }
-        return unique;
     }
 
+    // Get movie details with reviews (using SP_GetMovieDetailFull)
     async getPhimDetail(MaPhim) {
-        const phim = await prisma.phim.findUnique({
-            where: { MaPhim },
-            include: {
-                the_loai_phim: true,
-                danh_gia: true
+        try {
+            const phim = await prisma.$queryRaw`
+                SELECT 
+                    p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
+                    p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung,
+                    p.DoTuoi, p.ChuDePhim, p.Anh,
+                    ROUND(AVG(dg.DiemSo), 1) AS DiemTrungBinh,
+                    COUNT(DISTINCT dg.MaDanhGia) AS TongDanhGia
+                FROM PHIM p
+                LEFT JOIN DANH_GIA dg ON p.MaPhim = dg.MaPhim
+                WHERE p.MaPhim = ${MaPhim}
+                GROUP BY p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
+                         p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung,
+                         p.DoTuoi, p.ChuDePhim, p.Anh
+            `;
+            
+            if (!phim || phim.length === 0) {
+                throw new NotFoundError("Không tìm thấy phim");
             }
-        });
-
-        if (!phim) {
-            throw new NotFoundError("Không tìm thấy phim");
+            
+            return phim[0];
+        } catch (error) {
+            if (error instanceof NotFoundError) throw error;
+            throw new Error("Lỗi khi lấy chi tiết phim: " + error.message);
         }
-
-        return {
-            MaPhim: phim.MaPhim,
-            TenPhim: phim.TenPhim,
-            ThoiLuong: phim.ThoiLuong,
-            NgonNgu: phim.NgonNgu,
-            QuocGia: phim.QuocGia,
-            DaoDien: phim.DaoDien,
-            DienVienChinh: phim.DienVienChinh,
-            NgayKhoiChieu: phim.NgayKhoiChieu,
-            MoTa: phim.MoTaNoiDung, 
-            DoTuoi: phim.DoTuoi,
-            ChuDePhim: phim.ChuDePhim,
-            Anh: phim.Anh || "", 
-            TheLoai: phim.the_loai_phim.map(t => t.TheLoai), 
-            DanhGia: phim.danh_gia
-        };
     }
 
     async getSuatChieus({ MaRapPhim, MaPhim, NgayChieu }) {
-        const suatChieus = await prisma.suat_chieu.findMany({
-            where: {
-                MaPhim: MaPhim,
-                NgayChieu: new Date(NgayChieu),
-                phong_chieu: {
-                    MaRapPhim: MaRapPhim
-                }
-            },
-            include: {
-                phim: true,
-                phong_chieu: true
-            }
-        });
-
-        return suatChieus;
+        try {
+            const suatChieus = await prisma.$queryRaw`
+                SELECT 
+                    sc.MaSuatChieu,
+                    sc.MaPhim,
+                    sc.MaPhong,
+                    sc.NgayChieu,
+                    sc.GioBatDau,
+                    sc.GioKetThuc,
+                    sc.GiaVeCoBan,
+                    sc.TrangThai,
+                    pc.TenPhong,
+                    pc.SoGheToiDa,
+                    (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = sc.MaSuatChieu AND TrangThai <> 'Hủy') AS GheDaBan,
+                    (pc.SoGheToiDa - (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = sc.MaSuatChieu AND TrangThai <> 'Hủy')) AS GheTrong
+                FROM SUAT_CHIEU sc
+                JOIN PHONG_CHIEU pc ON sc.MaPhong = pc.MaPhong
+                WHERE sc.MaPhim = ${MaPhim}
+                  AND pc.MaRapPhim = ${MaRapPhim}
+                  AND TRUNC(sc.NgayChieu) = TRUNC(${new Date(NgayChieu)})
+                  AND sc.TrangThai <> 'Hủy'
+                ORDER BY sc.GioBatDau ASC
+            `;
+            return suatChieus || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lấy danh sách suất chiếu: " + error.message);
+        }
     }
 
     // ================================
@@ -273,114 +280,146 @@ class authService {
         return phims;
     }
     async getNowShowingPhims() {
-        const phims = await prisma.phim.findMany({
-            select: {
-                MaPhim: true,
-                TenPhim: true,
-                Anh: true,
-                ThoiLuong: true,
-                NgayKhoiChieu: true,
-                danh_gia: {
-                    select: { DiemSo: true }
-                }
-            },
-            orderBy: {
-                NgayKhoiChieu: 'desc'
-            }
-        });
-
-        return phims.map(p => {
-            const total = p.danh_gia.reduce((sum, item) => sum + item.DiemSo, 0);
-            const avg = p.danh_gia.length ? (total / p.danh_gia.length).toFixed(1) : 0;
-            return {
-                MaPhim: p.MaPhim,
-                TenPhim: p.TenPhim,
-                Anh: p.Anh,
-                ThoiLuong: p.ThoiLuong,
-                NgayKhoiChieu: p.NgayKhoiChieu,
-                DiemDanhGia: parseFloat(avg)
-            };
-        });
+        try {
+            const phims = await prisma.$queryRaw`
+                SELECT DISTINCT
+                    p.MaPhim,
+                    p.TenPhim,
+                    p.Anh,
+                    p.ThoiLuong,
+                    p.NgayKhoiChieu,
+                    COALESCE(ROUND(AVG(dg.DiemSo), 1), 0) AS DiemDanhGia,
+                    COUNT(DISTINCT sc.MaSuatChieu) AS SoSuatChieu
+                FROM PHIM p
+                LEFT JOIN DANH_GIA dg ON p.MaPhim = dg.MaPhim
+                JOIN SUAT_CHIEU sc ON p.MaPhim = sc.MaPhim
+                WHERE sc.NgayChieu >= TRUNC(SYSDATE)
+                  AND sc.TrangThai <> 'Hủy'
+                GROUP BY p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu
+                ORDER BY p.NgayKhoiChieu DESC
+            `;
+            return phims || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lấy danh sách phim đang chiếu: " + error.message);
+        }
     }
 
     // FIX: Thêm hàm lấy phim theo rating cao nhất
     async getPhimsSortedByRating() {
-        // Lấy top 10 phim có điểm đánh giá cao nhất
-        const result = await prisma.$queryRaw`
-            SELECT p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu,
-                   COALESCE(AVG(d.DiemSo), 0) as DiemDanhGia
-            FROM PHIM p
-            LEFT JOIN DANH_GIA d ON p.MaPhim = d.MaPhim
-            GROUP BY p.MaPhim
-            ORDER BY DiemDanhGia DESC
-            LIMIT 10
-        `;
-        return result;
+        try {
+            // Lấy top 10 phim có điểm đánh giá cao nhất
+            const result = await prisma.$queryRaw`
+                SELECT *
+                FROM (
+                    SELECT 
+                        p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu,
+                        COALESCE(ROUND(AVG(dg.DiemSo), 1), 0) as DiemDanhGia,
+                        COUNT(DISTINCT dg.MaDanhGia) AS TongDanhGia
+                    FROM PHIM p
+                    LEFT JOIN DANH_GIA dg ON p.MaPhim = dg.MaPhim
+                    GROUP BY p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu
+                    ORDER BY DiemDanhGia DESC, TongDanhGia DESC
+                )
+                WHERE ROWNUM <= 10
+            `;
+            return result || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lấy phim theo rating: " + error.message);
+        }
     }
     async filterPhims({ tenPhim, theLoai, nam }) {
-        // Chuyển đổi tham số để phù hợp với SQL (null nếu không có giá trị)
-        const searchName = tenPhim ? `%${tenPhim}%` : null;
-        const searchGenre = theLoai || null;
-        const searchYear = nam || null;
+        try {
+            // Chuyển đổi tham số để phù hợp với SQL (null nếu không có giá trị)
+            const searchName = tenPhim ? `%${tenPhim.toUpperCase()}%` : null;
 
-        // Query Raw thay thế SP
-        const result = await prisma.$queryRaw`
-            SELECT DISTINCT p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu, 
-                   COALESCE(AVG(d.DiemSo), 0) as DiemDanhGia
-            FROM PHIM p
-            LEFT JOIN THE_LOAI_PHIM t ON p.MaPhim = t.MaPhim
-            LEFT JOIN DANH_GIA d ON p.MaPhim = d.MaPhim
-            WHERE (${searchName} IS NULL OR p.TenPhim LIKE ${searchName})
-              AND (${searchGenre} IS NULL OR t.TheLoai = ${searchGenre})
-              AND (${searchYear} IS NULL OR YEAR(p.NgayKhoiChieu) = ${searchYear})
-            GROUP BY p.MaPhim
-            ORDER BY p.NgayKhoiChieu DESC
-        `;
-        
-        // Prisma trả về BigInt cho COUNT/AVG đôi khi, cần serialize nếu cần thiết, 
-        // nhưng ở đây AVG trả về Decimal/Float, nên ổn.
-        return result;
+            // Query Raw thay thế Prisma ORM
+            const result = await prisma.$queryRaw`
+                SELECT DISTINCT p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu, 
+                       COALESCE(ROUND(AVG(dg.DiemSo), 1), 0) as DiemDanhGia
+                FROM PHIM p
+                LEFT JOIN THE_LOAI_PHIM tlp ON p.MaPhim = tlp.MaPhim
+                LEFT JOIN DANH_GIA dg ON p.MaPhim = dg.MaPhim
+                WHERE (${searchName} IS NULL OR UPPER(p.TenPhim) LIKE ${searchName})
+                  AND (${theLoai} IS NULL OR tlp.TheLoai = ${theLoai})
+                  AND (${nam} IS NULL OR YEAR(p.NgayKhoiChieu) = ${nam})
+                GROUP BY p.MaPhim, p.TenPhim, p.Anh, p.ThoiLuong, p.NgayKhoiChieu
+                ORDER BY p.NgayKhoiChieu DESC
+            `;
+            
+            return result || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lọc phim: " + error.message);
+        }
     }
 
     // ================================
     //  LẤY THÔNG TIN CÁ NHÂN
     // ================================
     async getUserProfile(MaNguoiDung) {
-        const user = await prisma.tai_khoan.findUnique({
-            where: { MaNguoiDung },
-            include: {
-                khach_hang: true
+        try {
+            const user = await prisma.$queryRaw`
+                SELECT 
+                    tk.MaNguoiDung,
+                    tk.HoTen,
+                    tk.Email,
+                    tk.SDT,
+                    tk.DiaChi,
+                    tk.GioiTinh,
+                    kh.LoaiThanhVien,
+                    kh.DiemTichLuy,
+                    FUNC_XepHangThanhVien(${MaNguoiDung}) AS HangThanhVienCurrent,
+                    (SELECT COUNT(*) FROM DON_HANG WHERE MaNguoiDung_KH = ${MaNguoiDung}) AS TongDonHang,
+                    (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaNguoiDung_KH = ${MaNguoiDung} AND TrangThai <> 'Hủy') AS TongVeDat,
+                    (SELECT COALESCE(SUM(TongTien), 0) FROM DON_HANG WHERE MaNguoiDung_KH = ${MaNguoiDung} AND TrangThai = 'Đã thanh toán') AS TongChiTieu
+                FROM TAI_KHOAN tk
+                LEFT JOIN KHACH_HANG kh ON tk.MaNguoiDung = kh.MaNguoiDung
+                WHERE tk.MaNguoiDung = ${MaNguoiDung}
+            `;
+
+            if (!user || user.length === 0) {
+                throw new NotFoundError("Không tìm thấy thông tin người dùng");
             }
-        });
 
-        if (!user) {
-            throw new NotFoundError("Không tìm thấy thông tin người dùng");
+            const userData = user[0];
+            return {
+                MaNguoiDung: userData.MaNguoiDung,
+                HoTen: userData.HoTen,
+                Email: userData.Email,
+                SDT: userData.SDT,
+                DiaChi: userData.DiaChi,
+                GioiTinh: userData.GioiTinh,
+                LoaiThanhVien: userData.HangThanhVienCurrent || userData.LoaiThanhVien || 'Bronze',
+                DiemTichLuy: userData.DiemTichLuy || 0,
+                TongDonHang: userData.TongDonHang || 0,
+                TongVeDat: userData.TongVeDat || 0,
+                TongChiTieu: userData.TongChiTieu || 0
+            };
+        } catch (error) {
+            if (error instanceof NotFoundError) throw error;
+            throw new Error("Lỗi khi lấy thông tin cá nhân: " + error.message);
         }
-
-        // Gọi hàm FUNC_XepHangThanhVien để lấy hạng thành viên mới nhất
-        // RANK là từ khóa trong MySQL 8.0 -> Cần đổi alias hoặc bọc ``
-        const rankResult = await prisma.$queryRaw`SELECT FUNC_XepHangThanhVien(${MaNguoiDung}) as HangTV`;
-        const updatedRank = rankResult[0]?.HangTV || user.khach_hang?.LoaiThanhVien || 'Bronze';
-
-        return {
-            MaNguoiDung: user.MaNguoiDung,
-            HoTen: user.HoTen,
-            Email: user.Email,
-            SDT: user.SDT,
-            DiaChi: user.DiaChi,
-            GioiTinh: user.GioiTinh,
-            LoaiThanhVien: updatedRank,
-            DiemTichLuy: user.khach_hang?.DiemTichLuy || 0
-        };
     }
 
     // ================================
     //  LẤY DANH SÁCH COMBO
     // ================================
     async getCombos() {
-        return await prisma.mat_hang.findMany({
-            where: { LoaiHang: 'DO_AN' }
-        });
+        try {
+            const combos = await prisma.$queryRaw`
+                SELECT 
+                    MaHang,
+                    TenHang,
+                    DonGia,
+                    LoaiHang,
+                    MoTa
+                FROM MAT_HANG
+                WHERE LoaiHang = 'DO_AN'
+                ORDER BY TenHang
+            `;
+            return combos || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lấy danh sách combo: " + error.message);
+        }
     }
 
     // ================================
@@ -544,53 +583,102 @@ class authService {
     //  LẤY CHI TIẾT ĐƠN HÀNG
     // ================================
     async getOrderDetails(MaDonHang) {
-        const donHang = await prisma.don_hang.findUnique({
-            where: { MaDonHang },
-            include: {
-                ve_xem_phim: {
-                    include: {
-                        suat_chieu: {
-                            include: {
-                                phim: true,
-                                phong_chieu: true
-                            }
-                        }
-                    }
-                },
-                gom: {
-                    include: {
-                        mat_hang: true
-                    }
+        try {
+            const orderDetails = await prisma.$queryRaw`
+                SELECT 
+                    dh.MaDonHang,
+                    dh.MaNguoiDung_KH,
+                    dh.PhuongThuc,
+                    dh.ThoiGianDat,
+                    dh.TongTien,
+                    dh.TrangThai,
+                    vxp.MaVe,
+                    vxp.HangGhe,
+                    vxp.SoGhe,
+                    vxp.GiaVeCuoi,
+                    sc.NgayChieu,
+                    sc.GioBatDau,
+                    sc.GioKetThuc,
+                    p.MaPhim,
+                    p.TenPhim,
+                    p.Anh,
+                    pc.TenPhong,
+                    r.TenRap,
+                    gom.MaHang,
+                    mh.TenHang,
+                    gom.SoLuong,
+                    gom.DonGia
+                FROM DON_HANG dh
+                LEFT JOIN VE_XEM_PHIM vxp ON dh.MaDonHang = vxp.MaDonHang
+                LEFT JOIN SUAT_CHIEU sc ON vxp.MaSuatChieu = sc.MaSuatChieu
+                LEFT JOIN PHIM p ON sc.MaPhim = p.MaPhim
+                LEFT JOIN PHONG_CHIEU pc ON vxp.MaPhong = pc.MaPhong
+                LEFT JOIN RAP_CHIEU_PHIM r ON pc.MaRapPhim = r.MaRapPhim
+                LEFT JOIN GOM gom ON dh.MaDonHang = gom.MaDonHang
+                LEFT JOIN MAT_HANG mh ON gom.MaHang = mh.MaHang
+                WHERE dh.MaDonHang = ${MaDonHang}
+                ORDER BY vxp.MaVe, gom.MaHang
+            `;
+
+            if (!orderDetails || orderDetails.length === 0) {
+                throw new NotFoundError("Đơn hàng không tồn tại");
+            }
+
+            // Format data từ flat result set
+            const firstRow = orderDetails[0];
+            const seats = [];
+            const combos = [];
+
+            for (const row of orderDetails) {
+                if (row.MaVe && !seats.find(s => s.MaVe === row.MaVe)) {
+                    seats.push({
+                        MaVe: row.MaVe,
+                        HangGhe: row.HangGhe,
+                        SoGhe: row.SoGhe,
+                        GiaVeCuoi: row.GiaVeCuoi
+                    });
+                }
+                if (row.MaHang && !combos.find(c => c.MaHang === row.MaHang)) {
+                    combos.push({
+                        MaHang: row.MaHang,
+                        TenHang: row.TenHang,
+                        SoLuong: row.SoLuong,
+                        DonGia: row.DonGia
+                    });
                 }
             }
-        });
 
-        if (!donHang) throw new NotFoundError("Đơn hàng không tồn tại");
-
-        // Format lại dữ liệu cho FE dễ dùng
-        const veDauTien = donHang.ve_xem_phim[0];
-        const suatChieu = veDauTien ? veDauTien.suat_chieu : null;
-
-        return {
-            MaDonHang: donHang.MaDonHang,
-            TrangThai: donHang.TrangThai,
-            TongTien: donHang.TongTien,
-            ThoiGianDat: donHang.ThoiGianDat,
-            suatChieu: suatChieu ? {
-                MaSuatChieu: suatChieu.MaSuatChieu,
-                GioBatDau: suatChieu.GioBatDau,
-                NgayChieu: suatChieu.NgayChieu,
-                phim: suatChieu.phim,
-                phong_chieu: suatChieu.phong_chieu
-            } : null,
-            seats: donHang.ve_xem_phim.map(v => ({ HangGhe: v.HangGhe, SoGhe: v.SoGhe })),
-            combos: donHang.gom.map(g => ({
-                MaHang: g.MaHang,
-                TenHang: g.mat_hang.TenHang,
-                SoLuong: g.SoLuong,
-                DonGia: g.DonGia
-            }))
-        };
+            return {
+                MaDonHang: firstRow.MaDonHang,
+                MaNguoiDung: firstRow.MaNguoiDung_KH,
+                TrangThai: firstRow.TrangThai,
+                TongTien: firstRow.TongTien,
+                ThoiGianDat: firstRow.ThoiGianDat,
+                PhuongThuc: firstRow.PhuongThuc,
+                suatChieu: firstRow.MaPhim ? {
+                    MaSuatChieu: firstRow.MaSuatChieu,
+                    NgayChieu: firstRow.NgayChieu,
+                    GioBatDau: firstRow.GioBatDau,
+                    GioKetThuc: firstRow.GioKetThuc,
+                    phim: {
+                        MaPhim: firstRow.MaPhim,
+                        TenPhim: firstRow.TenPhim,
+                        Anh: firstRow.Anh
+                    },
+                    phong_chieu: {
+                        TenPhong: firstRow.TenPhong,
+                        rap_chieu_phim: {
+                            TenRap: firstRow.TenRap
+                        }
+                    }
+                } : null,
+                seats: seats,
+                combos: combos
+            };
+        } catch (error) {
+            if (error instanceof NotFoundError) throw error;
+            throw new Error("Lỗi khi lấy chi tiết đơn hàng: " + error.message);
+        }
     }
 
     // ================================
@@ -601,19 +689,21 @@ class authService {
     //  LẤY GHẾ ĐÃ ĐẶT
     // ================================
     async getBookedSeats(MaSuatChieu) {
-        const bookedSeats = await prisma.ve_xem_phim.findMany({
-            where: {
-                MaSuatChieu: MaSuatChieu,
-                TrangThai: {
-                    not: 'Hủy'
-                }
-            },
-            select: {
-                HangGhe: true,
-                SoGhe: true
-            }
-        });
-        return bookedSeats;
+        try {
+            const bookedSeats = await prisma.$queryRaw`
+                SELECT 
+                    HangGhe,
+                    SoGhe,
+                    TrangThai
+                FROM VE_XEM_PHIM
+                WHERE MaSuatChieu = ${MaSuatChieu}
+                  AND TrangThai <> 'Hủy'
+                ORDER BY HangGhe, SoGhe
+            `;
+            return bookedSeats || [];
+        } catch (error) {
+            throw new Error("Lỗi khi lấy danh sách ghế đã đặt: " + error.message);
+        }
     }
 
 }

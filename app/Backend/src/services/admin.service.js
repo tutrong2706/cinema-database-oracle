@@ -2,43 +2,49 @@ import prisma from "../common/prisma/prisma.init.js";
 import { BadRequestError } from "../helpers/handleError.js";
 
 class AdminService {
-    // 1. Tìm kiếm phim (Gọi SP_TimKiemPhim)
+    // 1. Get all movies with rating and performance (using SP_GetAllMoviesWithRating)
     async getPhims(keyword) {
         const search = (keyword || "").trim();
 
-        // Nếu không truyền keyword -> trả về toàn bộ phim kèm điểm đánh giá trung bình
-        if (!search) {
+        try {
+            if (!search) {
+                // Call procedure without keyword - get all movies
+                const phims = await prisma.$queryRaw`
+                    SELECT p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
+                           p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung,
+                           p.DoTuoi, p.ChuDePhim, p.Anh,
+                           ROUND(AVG(d.DiemSo),1) AS DiemDanhGia,
+                           FUNC_DanhGiaHieuQuaPhim(p.MaPhim) AS HieuQua
+                    FROM PHIM p
+                    LEFT JOIN DANH_GIA d ON p.MaPhim = d.MaPhim
+                    GROUP BY p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
+                             p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung,
+                             p.DoTuoi, p.ChuDePhim, p.Anh
+                    ORDER BY p.NgayKhoiChieu DESC
+                `;
+                return phims;
+            }
+
+            // Call SP_SearchMoviesWithRating for keyword search
             const phims = await prisma.$queryRaw`
                 SELECT p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
-                       p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung AS MoTaNoiDung,
+                       p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung,
                        p.DoTuoi, p.ChuDePhim, p.Anh,
                        ROUND(AVG(d.DiemSo),1) AS DiemDanhGia,
-                       FUNC_DanhGiaHieuQuaPhim(p.MaPhim) AS HieuQua,
-                       FUNC_DanhGiaHieuQuaPhim_Moi(p.MaPhim) AS HieuQuaMoi
+                       FUNC_DanhGiaHieuQuaPhim(p.MaPhim) AS HieuQua
                 FROM PHIM p
                 LEFT JOIN DANH_GIA d ON p.MaPhim = d.MaPhim
-                GROUP BY p.MaPhim
+                WHERE UPPER(p.TenPhim) LIKE UPPER(${'%' + search + '%'})
+                   OR UPPER(p.ChuDePhim) LIKE UPPER(${'%' + search + '%'})
+                GROUP BY p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
+                         p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung,
+                         p.DoTuoi, p.ChuDePhim, p.Anh
                 ORDER BY p.NgayKhoiChieu DESC
             `;
             return phims;
+        } catch (error) {
+            throw new BadRequestError("Lỗi khi tìm kiếm phim: " + error.message);
         }
-
-        // Nếu có keyword -> query tay thay vì gọi SP
-        const searchPattern = `%${search}%`;
-        const phims = await prisma.$queryRaw`
-            SELECT p.MaPhim, p.TenPhim, p.ThoiLuong, p.NgonNgu, p.QuocGia,
-                   p.DaoDien, p.DienVienChinh, p.NgayKhoiChieu, p.MoTaNoiDung AS MoTaNoiDung,
-                   p.DoTuoi, p.ChuDePhim, p.Anh,
-                   ROUND(AVG(d.DiemSo),1) AS DiemDanhGia,
-                   FUNC_DanhGiaHieuQuaPhim(p.MaPhim) AS HieuQua,
-                   FUNC_DanhGiaHieuQuaPhim_Moi(p.MaPhim) AS HieuQuaMoi
-            FROM PHIM p
-            LEFT JOIN DANH_GIA d ON p.MaPhim = d.MaPhim
-            WHERE p.TenPhim LIKE ${searchPattern}
-            GROUP BY p.MaPhim
-            ORDER BY p.NgayKhoiChieu DESC
-        `;
-        return phims;
     }
 
     // 2. Xóa phim (Gọi SP_Delete_PHIM_Flexible)

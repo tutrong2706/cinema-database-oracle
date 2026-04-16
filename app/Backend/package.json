@@ -15,7 +15,6 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@prisma/client": "5.22.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -25,8 +24,9 @@
     "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
+    "@prisma/client": "^5.20.0",
     "dotenv-cli": "^11.0.0",
     "nodemon": "^3.1.10",
-    "prisma": "5.22.0"
+    "prisma": "^5.20.0"
   }
 }
