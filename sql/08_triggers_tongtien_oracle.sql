@@ -52,7 +52,7 @@ AFTER INSERT ON VE_XEM_PHIM
 FOR EACH ROW
 BEGIN
     UPDATE DON_HANG
-    SET TongTien = TongTien + NVL(:NEW.GiaVeCuoi, :NEW.GiaVe)
+    SET TongTien = TongTien + NVL(:NEW.GiaVeCuoi, 0)
     WHERE MaDonHang = :NEW.MaDonHang;
     
     COMMIT;
@@ -65,7 +65,7 @@ AFTER DELETE ON VE_XEM_PHIM
 FOR EACH ROW
 BEGIN
     UPDATE DON_HANG
-    SET TongTien = TongTien - NVL(:OLD.GiaVeCuoi, :OLD.GiaVe)
+    SET TongTien = TongTien - NVL(:OLD.GiaVeCuoi, 0)
     WHERE MaDonHang = :OLD.MaDonHang;
     
     COMMIT;
@@ -80,8 +80,8 @@ DECLARE
     old_price   NUMBER;
     new_price   NUMBER;
 BEGIN
-    old_price := NVL(:OLD.GiaVeCuoi, :OLD.GiaVe);
-    new_price := NVL(:NEW.GiaVeCuoi, :NEW.GiaVe);
+    old_price := NVL(:OLD.GiaVeCuoi, 0);
+    new_price := NVL(:NEW.GiaVeCuoi, 0);
 
     UPDATE DON_HANG
     SET TongTien = TongTien - old_price + new_price
@@ -116,7 +116,7 @@ BEGIN
     WHERE MaDonHang = :NEW.MaDonHang;
 
     -- Get total paid so far
-    SELECT NVL(SUM(SoTienThanhToan), 0) INTO v_DaTra
+    SELECT NVL(SUM(SoTien), 0) INTO v_DaTra
     FROM THANH_TOAN
     WHERE MaDonHang = :NEW.MaDonHang;
 

@@ -1,6 +1,6 @@
 -- ORACLE VERSION: Stored Procedures for DON_HANG (Order) Management
 -- ============================================================================
-
+set echo off;
 -- 1. CREATE NEW ORDER
 CREATE OR REPLACE PROCEDURE SP_TaoDonHang (
     p_MaDonHang      IN DON_HANG.MaDonHang%TYPE,
@@ -8,14 +8,17 @@ CREATE OR REPLACE PROCEDURE SP_TaoDonHang (
     p_PhuongThuc     IN DON_HANG.PhuongThuc%TYPE
 )
 AS
+    v_count NUMBER;
 BEGIN
     -- Check if order code already exists
-    IF (SELECT COUNT(*) FROM DON_HANG WHERE MaDonHang = p_MaDonHang) > 0 THEN
+    SELECT COUNT(*) INTO v_count FROM DON_HANG WHERE MaDonHang = p_MaDonHang;
+    IF v_count > 0 THEN
         RAISE_APPLICATION_ERROR(-20010, 'Mã đơn hàng đã tồn tại.');
     END IF;
 
     -- Check if customer exists
-    IF (SELECT COUNT(*) FROM NGUOI_DUNG WHERE MaNguoiDung = p_MaNguoiDung_KH) = 0 THEN
+    SELECT COUNT(*) INTO v_count FROM KHACH_HANG WHERE MaNguoiDung = p_MaNguoiDung_KH;
+    IF v_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20011, 'Mã người dùng không tồn tại.');
     END IF;
 
@@ -87,20 +90,24 @@ END SP_CapNhatTrangThaiDon;
 
 -- 4. GET ORDER BY CODE
 CREATE OR REPLACE PROCEDURE SP_Get_DonHang_ByCode (
-    p_MaDonHang IN DON_HANG.MaDonHang%TYPE
+    p_MaDonHang IN DON_HANG.MaDonHang%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM DON_HANG WHERE MaDonHang = p_MaDonHang;
 END SP_Get_DonHang_ByCode;
 /
 
 -- 5. GET ALL ORDERS FOR CUSTOMER
 CREATE OR REPLACE PROCEDURE SP_Get_DonHang_ByCustomer (
-    p_MaNguoiDung IN DON_HANG.MaNguoiDung_KH%TYPE
+    p_MaNguoiDung IN DON_HANG.MaNguoiDung_KH%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM DON_HANG 
     WHERE MaNguoiDung_KH = p_MaNguoiDung 
     ORDER BY ThoiGianDat DESC;
@@ -109,10 +116,12 @@ END SP_Get_DonHang_ByCustomer;
 
 -- 6. GET ORDER DETAILS (Items in order)
 CREATE OR REPLACE PROCEDURE SP_Get_ChiTietDonHang (
-    p_MaDonHang IN GOM.MaDonHang%TYPE
+    p_MaDonHang IN GOM.MaDonHang%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT 
         g.MaDonHang,
         g.MaHang,

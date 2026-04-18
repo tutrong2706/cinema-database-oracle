@@ -273,9 +273,9 @@ const BookingPage = () => {
                         <button 
                             onClick={handleConfirm}
                             disabled={selectedSeats.length === 0}
-                            className={`px-10 py-3 rounded-xl font-bold transition text-lg ${
+                            className={`px-10 py-3 rounded-xl font-bold transition transform text-lg ${
                                 selectedSeats.length > 0 
-                                ?'!bg-[#00E5FF] !text-black hover:!bg-[#00cce6] shadow-[0_0_15px_rgba(0,229,255,0.4)]'
+                                ?'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] !text-black hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30'
                                 :'!bg-gray-700 !text-gray-500 cursor-not-allowed opacity-60'
                             }`}
                         >

@@ -1,6 +1,6 @@
 -- ORACLE VERSION: Views and Data Access Procedures
 -- ============================================================================
-
+Set echo off;
 -- VIEW 1: Get all movies with screening status
 CREATE OR REPLACE VIEW V_PHIM_FULL AS
 SELECT 
@@ -30,8 +30,8 @@ SELECT
     p.TenPhim,
     COUNT(DISTINCT s.MaSuatChieu) AS SoSuatChieu,
     COUNT(DISTINCT ve.MaVe) AS TongVeDat,
-    SUM(CASE WHEN ve.TrangThai IN ('Đã thanh toán', 'Đã xem') THEN 1 ELSE 0 END) AS VeDaThanhToan,
-    SUM(CASE WHEN ve.TrangThai IN ('Đã thanh toán', 'Đã xem') THEN ve.GiaVe ELSE 0 END) AS TongDoanhThuVe,
+    SUM(CASE WHEN ve.TrangThai IN ('Đã thanh toán') THEN 1 ELSE 0 END) AS VeDaThanhToan,
+    SUM(CASE WHEN ve.TrangThai IN ('Đã thanh toán') THEN ve.GiaVeCuoi ELSE 0 END) AS TongDoanhThuVe,
     ROUND(COUNT(DISTINCT ve.MaVe) * 100.0 / NULLIF(COUNT(DISTINCT s.MaSuatChieu) * 100, 0), 2) AS TyLeLapDayTB
 FROM PHIM p
 LEFT JOIN SUAT_CHIEU s ON p.MaPhim = s.MaPhim AND s.TrangThai <> 'Hủy'
@@ -44,38 +44,38 @@ CREATE OR REPLACE VIEW V_DOANH_THU_THEO_PHIM AS
 SELECT 
     p.MaPhim,
     p.TenPhim,
-    TRUNC(ve.ThoiGianThanhToan) AS Ngay,
-    COUNT(ve.MaVe) AS SoVe,
-    SUM(ve.GiaVeCuoi) AS DoanhThuVe,
-    SUM(g.SoLuong * g.DonGia) AS DoanhThuHang,
-    SUM(ve.GiaVeCuoi) + SUM(g.SoLuong * g.DonGia) AS TongDoanhThu
+    TRUNC(ve.NgayDat) AS Ngay,
+    COUNT(DISTINCT ve.MaVe) AS SoVe,
+    SUM(NVL(ve.GiaVeCuoi, 0)) AS DoanhThuVe,
+    SUM(NVL(g.SoLuong * g.DonGia, 0)) AS DoanhThuHang,
+    SUM(NVL(ve.GiaVeCuoi, 0)) + SUM(NVL(g.SoLuong * g.DonGia, 0)) AS TongDoanhThu
 FROM PHIM p
 JOIN SUAT_CHIEU s ON p.MaPhim = s.MaPhim
-LEFT JOIN VE_XEM_PHIM ve ON s.MaSuatChieu = ve.MaSuatChieu AND ve.TrangThai IN ('Đã thanh toán', 'Đã xem')
+LEFT JOIN VE_XEM_PHIM ve ON s.MaSuatChieu = ve.MaSuatChieu AND ve.TrangThai = 'Đã thanh toán'
 LEFT JOIN DON_HANG dh ON ve.MaDonHang = dh.MaDonHang
 LEFT JOIN GOM g ON dh.MaDonHang = g.MaDonHang
-WHERE ve.ThoiGianThanhToan IS NOT NULL
-GROUP BY p.MaPhim, p.TenPhim, TRUNC(ve.ThoiGianThanhToan);
+WHERE ve.MaVe IS NOT NULL
+GROUP BY p.MaPhim, p.TenPhim, TRUNC(ve.NgayDat);
 /
 
 -- VIEW 4: Customer booking history
 CREATE OR REPLACE VIEW V_KHACH_HANG_FULL AS
 SELECT 
-    nd.MaNguoiDung,
-    nd.TenNguoiDung,
-    nd.Email,
-    nd.SoDienThoai,
-    nd.NgaySinh,
+    kh.MaNguoiDung,
+    tk.HoTen,
+    tk.Email,
+    tk.SDT,
     COUNT(DISTINCT ve.MaVe) AS SoVeDat,
     COUNT(DISTINCT dh.MaDonHang) AS SoLanMua,
-    SUM(ve.GiaVe) AS TongTienVe,
+    SUM(ve.GiaVeCuoi) AS TongTienVe,
     SUM(g.SoLuong * g.DonGia) AS TongTienHang,
-    MAX(ve.ThoiGianDat) AS LanMuaCuoi
-FROM NGUOI_DUNG nd
-LEFT JOIN VE_XEM_PHIM ve ON nd.MaNguoiDung = ve.MaNguoiDung
-LEFT JOIN DON_HANG dh ON nd.MaNguoiDung = dh.MaNguoiDung_KH
+    MAX(ve.NgayDat) AS LanMuaCuoi
+FROM KHACH_HANG kh
+JOIN TAI_KHOAN tk ON kh.MaNguoiDung = tk.MaNguoiDung
+LEFT JOIN VE_XEM_PHIM ve ON kh.MaNguoiDung = ve.MaNguoiDung_KH
+LEFT JOIN DON_HANG dh ON kh.MaNguoiDung = dh.MaNguoiDung_KH
 LEFT JOIN GOM g ON dh.MaDonHang = g.MaDonHang
-GROUP BY nd.MaNguoiDung, nd.TenNguoiDung, nd.Email, nd.SoDienThoai, nd.NgaySinh;
+GROUP BY kh.MaNguoiDung, tk.HoTen, tk.Email, tk.SDT;
 /
 
 -- VIEW 5: Seat map for each showtimes
@@ -86,32 +86,29 @@ SELECT
     s.NgayChieu,
     s.GioBatDau || ' - ' || s.GioKetThuc AS ThoiGian,
     pc.MaPhong,
-    pc.TenPhong,
-    g.MaGhe,
+    pc.Ten AS TenPhong,
     g.HangGhe,
-    g.CotGhe,
-    CASE 
-        WHEN g.TrangThai = 'Trống' THEN 'AVAILABLE'
-        WHEN g.TrangThai = 'Đã bán' THEN 'SOLD'
-        WHEN g.TrangThai = 'Đang giữ' THEN 'HOLDING'
-        ELSE g.TrangThai
-    END AS GheStatus,
-    (SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END 
-     FROM VE_XEM_PHIM 
-     WHERE MaSuatChieu = s.MaSuatChieu AND MaGhe = g.MaGhe 
-     AND TrangThai IN ('Chờ thanh toán', 'Đã thanh toán')) AS DaDat
+    g.SoGhe,
+    g.LoaiGhe,
+    CASE WHEN ve.MaVe IS NOT NULL THEN 'Đã đặt' ELSE 'Trống' END AS GheStatus,
+    CASE WHEN ve.MaVe IS NOT NULL THEN 'Y' ELSE 'N' END AS DaDat
 FROM SUAT_CHIEU s
 JOIN PHIM p ON s.MaPhim = p.MaPhim
 JOIN PHONG_CHIEU pc ON s.MaPhong = pc.MaPhong
 JOIN GHE g ON pc.MaPhong = g.MaPhong
+LEFT JOIN VE_XEM_PHIM ve ON s.MaSuatChieu = ve.MaSuatChieu 
+    AND g.MaPhong = ve.MaPhong 
+    AND g.HangGhe = ve.HangGhe 
+    AND g.SoGhe = ve.SoGhe 
+    AND ve.TrangThai IN ('Chờ thanh toán', 'Đã thanh toán')
 WHERE s.TrangThai <> 'Hủy'
-ORDER BY s.NgayChieu, s.GioBatDau, g.HangGhe, g.CotGhe;
+ORDER BY s.NgayChieu, s.GioBatDau, g.HangGhe, g.SoGhe;
 /
 
 -- VIEW 6: Monthly revenue report
 CREATE OR REPLACE VIEW V_REPORT_THANG_DOANH_THU AS
 SELECT 
-    TO_CHAR(ve.ThoiGianThanhToan, 'YYYY-MM') AS Thang,
+    TO_CHAR(ve.NgayDat, 'YYYY-MM') AS Thang,
     COUNT(DISTINCT ve.MaVe) AS SoVeBan,
     SUM(ve.GiaVeCuoi) AS DoanhThuVe,
     COUNT(DISTINCT dh.MaDonHang) AS SoHoaDon,
@@ -121,7 +118,7 @@ FROM VE_XEM_PHIM ve
 LEFT JOIN DON_HANG dh ON ve.MaDonHang = dh.MaDonHang
 LEFT JOIN GOM g ON dh.MaDonHang = g.MaDonHang
 WHERE ve.TrangThai IN ('Đã thanh toán', 'Đã xem')
-GROUP BY TO_CHAR(ve.ThoiGianThanhToan, 'YYYY-MM')
+GROUP BY TO_CHAR(ve.NgayDat, 'YYYY-MM')
 ORDER BY Thang DESC;
 /
 
@@ -149,13 +146,15 @@ SELECT
     p.TenPhim,
     s.NgayChieu,
     s.GioBatDau || '-' || s.GioKetThuc AS ThoiGianChieu,
-    pc.TenPhong,
+    pc.Ten AS TenPhong,
     pc.SucChua,
-    (SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong AND TrangThai = 'Trống') AS GheTrong,
+    (SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong) - 
+    (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
+     AND TrangThai IN ('Đã thanh toán', 'Đã xem')) AS GheTrong,
     (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
      AND TrangThai IN ('Đã thanh toán', 'Đã xem')) AS GheDaBan,
     s.TrangThai,
-    s.GiaVe
+    s.GiaVeCoBan
 FROM SUAT_CHIEU s
 JOIN PHIM p ON s.MaPhim = p.MaPhim
 JOIN PHONG_CHIEU pc ON s.MaPhong = pc.MaPhong
@@ -167,10 +166,12 @@ ORDER BY s.NgayChieu DESC, s.GioBatDau DESC;
 CREATE OR REPLACE PROCEDURE SP_Get_PHIM_Paging (
     p_PageNum   IN NUMBER DEFAULT 1,
     p_PageSize  IN NUMBER DEFAULT 10,
-    p_Keyword   IN VARCHAR2 DEFAULT NULL
+    p_Keyword   IN VARCHAR2 DEFAULT NULL,
+    p_cursor    OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM (
         SELECT 
             p.*,
@@ -186,10 +187,12 @@ END SP_Get_PHIM_Paging;
 
 -- PROCEDURE 2: Get showtimes for a movie
 CREATE OR REPLACE PROCEDURE SP_Get_SuatChieu_ByPhim (
-    p_MaPhim IN PHIM.MaPhim%TYPE
+    p_MaPhim IN PHIM.MaPhim%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT s.* FROM SUAT_CHIEU s
     WHERE s.MaPhim = p_MaPhim
     AND s.NgayChieu >= TRUNC(SYSDATE)
@@ -201,12 +204,28 @@ END SP_Get_SuatChieu_ByPhim;
 -- PROCEDURE 3: Get revenue report
 CREATE OR REPLACE PROCEDURE SP_Report_DoanhThu (
     p_NgayBatDau IN DATE,
-    p_NgayKetThuc IN DATE
+    p_NgayKetThuc IN DATE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
-    SELECT * FROM V_DOANH_THU_THEO_PHIM
-    WHERE Ngay BETWEEN p_NgayBatDau AND p_NgayKetThuc
-    ORDER BY Ngay DESC, DoanhThu DESC;
+    OPEN p_cursor FOR
+    SELECT 
+        p.MaPhim,
+        p.TenPhim,
+        TRUNC(ve.NgayDat) AS Ngay,
+        COUNT(DISTINCT ve.MaVe) AS SoVe,
+        SUM(NVL(ve.GiaVeCuoi, 0)) AS DoanhThuVe,
+        SUM(NVL(g.SoLuong * g.DonGia, 0)) AS DoanhThuHang,
+        SUM(NVL(ve.GiaVeCuoi, 0)) + SUM(NVL(g.SoLuong * g.DonGia, 0)) AS TongDoanhThu
+    FROM PHIM p
+    JOIN SUAT_CHIEU s ON p.MaPhim = s.MaPhim
+    LEFT JOIN VE_XEM_PHIM ve ON s.MaSuatChieu = ve.MaSuatChieu AND ve.TrangThai = 'Đã thanh toán'
+    LEFT JOIN DON_HANG dh ON ve.MaDonHang = dh.MaDonHang
+    LEFT JOIN GOM g ON dh.MaDonHang = g.MaDonHang
+    WHERE ve.MaVe IS NOT NULL
+        AND TRUNC(ve.NgayDat) BETWEEN p_NgayBatDau AND p_NgayKetThuc
+    GROUP BY p.MaPhim, p.TenPhim, TRUNC(ve.NgayDat)
+    ORDER BY TRUNC(ve.NgayDat) DESC, SUM(NVL(ve.GiaVeCuoi, 0)) DESC;
 END SP_Report_DoanhThu;
 /

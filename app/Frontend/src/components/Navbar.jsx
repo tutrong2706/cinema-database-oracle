@@ -5,7 +5,7 @@ const Navbar = () => {
     const navigate = useNavigate();
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const isAdmin = user.role === 'Admin';
+    const isAdmin = user.vaiTro === 'Admin';  // ✅ FIXED: Changed from role to vaiTro
     const [showDropdown, setShowDropdown] = useState(false);
 
     const handleLogout = () => {

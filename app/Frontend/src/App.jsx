@@ -3,12 +3,13 @@ import HomePage from './pages/HomePage';
 import MovieDetail from './pages/MovieDetail';
 import BookingPage from './pages/BookingPage';
 import PaymentPage from './pages/PaymentPage';
-import LoginPage from './pages/LoginPage'; // Bạn tự tạo trang này nhé
-import Navbar from './components/Navbar'; // Bạn tự tạo Navbar đơn giản
-import AdminPage from './pages/AdminPage'; // <-- added import
-import SearchPage from './pages/SearchPage'; // <-- added import
-import ProfilePage from './pages/ProfilePage'; // <-- added import
-import RevenueReportPage from './pages/RevenueReportPage'; // <-- added import
+import LoginPage from './pages/LoginPage';
+import Navbar from './components/Navbar';
+import AdminPage from './pages/AdminPage';
+import SearchPage from './pages/SearchPage';
+import ProfilePage from './pages/ProfilePage';
+import RevenueReportPage from './pages/RevenueReportPage';
+import ProtectedAdminRoute from './components/ProtectedAdminRoute';  // ✅ Added import
 
 function App() {
   return (
@@ -23,9 +24,9 @@ function App() {
             <Route path="/booking/:id" element={<BookingPage />} />
             <Route path="/payment" element={<PaymentPage />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/admin" element={<AdminPage />} /> {/* <-- added route */}
-            <Route path="/profile" element={<ProfilePage />} /> {/* <-- added profile route */}
-            <Route path="/revenue-report" element={<RevenueReportPage />} /> {/* <-- added revenue report route */}
+            <Route path="/admin" element={<ProtectedAdminRoute element={<AdminPage />} />} />  {/* ✅ Protected */}
+            <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/revenue-report" element={<ProtectedAdminRoute element={<RevenueReportPage />} />} />  {/* ✅ Protected */}
           </Routes>
         </div>
       </div>

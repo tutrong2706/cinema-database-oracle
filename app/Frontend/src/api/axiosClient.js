@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const axiosClient = axios.create({
-    baseURL: 'http://localhost:3069', // Port của Backend
+    baseURL: 'http://localhost:3069/api', // Port của Backend + /api prefix
     headers: {
         'Content-Type': 'application/json',
     },

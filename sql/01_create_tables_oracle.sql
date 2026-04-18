@@ -6,8 +6,43 @@
 
 -- 1. Cấu hình môi trường
 SET DEFINE OFF;
-SET ECHO ON;
+SET ECHO OFF;          -- Không nhắc lại câu lệnh đang chạy
+SET FEEDBACK OFF;      -- Không hiện thông báo "1 row created" hoặc "Table created"
+SET TERMOUT ON;        -- Vẫn hiện kết quả ra màn hình
+SET VERIFY OFF;        -- Không hiện chi tiết thay đổi biến &
+SET SERVEROUTPUT ON;   -- Bật để hiện thông báo từ DBMS_OUTPUT
+-- kiểm tra bảng và index trước khi xóa
 
+
+DECLARE
+  v_count_tables NUMBER := 0;
+  v_count_seq    NUMBER := 0;
+BEGIN
+  -- Đếm số bảng trước khi xóa
+  SELECT COUNT(*) INTO v_count_tables FROM user_tables;
+
+  -- Xóa toàn bộ Bảng
+  FOR rec IN (SELECT table_name FROM user_tables) LOOP
+    EXECUTE IMMEDIATE 'DROP TABLE ' || rec.table_name || ' CASCADE CONSTRAINTS';
+  END LOOP;
+
+  -- Đếm sequence trước khi xóa
+  SELECT COUNT(*) INTO v_count_seq FROM user_sequences;
+
+  -- Xóa toàn bộ Sequence
+  FOR rec IN (SELECT sequence_name FROM user_sequences) LOOP
+    EXECUTE IMMEDIATE 'DROP SEQUENCE ' || rec.sequence_name;
+  END LOOP;
+
+  -- In thông báo
+  IF v_count_tables = 0 AND v_count_seq = 0 THEN
+    DBMS_OUTPUT.PUT_LINE('⚠️ Không có bảng hoặc sequence nào để xóa.');
+  ELSE
+    DBMS_OUTPUT.PUT_LINE('✅ Đã xóa ' || v_count_tables || ' bảng và ' || v_count_seq || ' sequence.');
+  END IF;
+
+END;
+/
 -- 2. Xóa toàn bộ các đối tượng cũ để tránh lỗi "Name already used"
 BEGIN
   -- Xóa toàn bộ Bảng (Tables)
@@ -25,6 +60,7 @@ END;
 -- 3. Dọn dẹp thùng rác để giải phóng bộ nhớ
 PURGE RECYCLEBIN;
 
+
 -- Create tablespace for sequences
 CREATE SEQUENCE seq_ma_nguoi_dung START WITH 1000 INCREMENT BY 1;
 CREATE SEQUENCE seq_ma_phim START WITH 1000 INCREMENT BY 1;
@@ -35,12 +71,17 @@ CREATE SEQUENCE seq_ma_thanh_toan START WITH 1000 INCREMENT BY 1;
 
 -- ============================================================================
 -- TABLE CREATION - ORACLE SYNTAX
+-- NGUYÊN TẮC: Bảng Cha (không FK) → Bảng Con (có FK trỏ về Cha)
 -- ============================================================================
 
--- RẠP CHIẾU PHIM
+-- ============================================================================
+-- BẢNG CHA (Không có Foreign Key)
+-- ============================================================================
+
+-- 1. RẠP CHIẾU PHIM
 CREATE TABLE RAP_CHIEU_PHIM (
     MaRapPhim  VARCHAR2(20) PRIMARY KEY,
-    Ten        VARCHAR2(20) NOT NULL,
+    Ten        VARCHAR2(50) NOT NULL,
     ThanhPho   VARCHAR2(25) NOT NULL,
     DiaChi     VARCHAR2(50) NOT NULL,
     SDT        VARCHAR2(15) NOT NULL,
@@ -49,31 +90,7 @@ CREATE TABLE RAP_CHIEU_PHIM (
     CONSTRAINT chk_rap_email CHECK (REGEXP_LIKE(Email, '^[^@\s]+@[^@\s]+\.[^@\s]+$'))
 );
 
--- PHÒNG CHIẾU
-CREATE TABLE PHONG_CHIEU (
-    MaPhong   VARCHAR2(20) PRIMARY KEY,
-    MaRapPhim VARCHAR2(20) NOT NULL,
-    Ten       VARCHAR2(20) NOT NULL,
-    Loai      VARCHAR2(20) NOT NULL,
-    SucChua   INT NOT NULL,
-    SoGhe     INT NOT NULL,
-    CONSTRAINT chk_phong_suchua CHECK (SucChua > 0),
-    CONSTRAINT chk_phong_soghe CHECK (SoGhe > 0),
-    CONSTRAINT fk_phong_rap FOREIGN KEY (MaRapPhim) REFERENCES RAP_CHIEU_PHIM(MaRapPhim)
-);
-
--- GHẾ
-CREATE TABLE GHE (
-    MaPhong VARCHAR2(20) NOT NULL,
-    HangGhe VARCHAR2(10) NOT NULL,
-    SoGhe INT NOT NULL,
-    LoaiGhe VARCHAR2(10) NOT NULL,
-    CONSTRAINT pk_ghe PRIMARY KEY (MaPhong, HangGhe, SoGhe),
-    CONSTRAINT chk_ghe_soghe CHECK (SoGhe > 0),
-    CONSTRAINT fk_ghe_phong FOREIGN KEY (MaPhong) REFERENCES PHONG_CHIEU(MaPhong)
-);
-
--- PHIM
+-- 2. PHIM
 CREATE TABLE PHIM (
     MaPhim VARCHAR2(20) PRIMARY KEY,
     TenPhim VARCHAR2(200) NOT NULL,
@@ -91,15 +108,7 @@ CREATE TABLE PHIM (
     CONSTRAINT chk_phim_dotuoi CHECK (DoTuoi >= 0)
 );
 
--- THỂ LOẠI
-CREATE TABLE THE_LOAI_PHIM (
-    MaPhim VARCHAR2(20) NOT NULL,
-    TheLoai VARCHAR2(50) NOT NULL,
-    CONSTRAINT pk_theloai PRIMARY KEY (MaPhim, TheLoai),
-    CONSTRAINT fk_theloai_phim FOREIGN KEY (MaPhim) REFERENCES PHIM(MaPhim)
-);
-
--- KHUYẾN MÃI
+-- 3. CHUONG_TRINH_KHUYEN_MAI
 CREATE TABLE CHUONG_TRINH_KHUYEN_MAI (
     MaKhuyenMai VARCHAR2(20) PRIMARY KEY,
     TenChuongTrinh VARCHAR2(200) NOT NULL,
@@ -111,7 +120,7 @@ CREATE TABLE CHUONG_TRINH_KHUYEN_MAI (
     CONSTRAINT chk_km_mucgiam CHECK (MucGiam >= 0)
 );
 
--- TÀI KHOẢN
+-- 4. TAI_KHOAN
 CREATE TABLE TAI_KHOAN (
     MaNguoiDung VARCHAR2(20) PRIMARY KEY,
     HoTen VARCHAR2(50) NOT NULL,
@@ -120,39 +129,13 @@ CREATE TABLE TAI_KHOAN (
     GioiTinh CHAR(1),
     Email VARCHAR2(50) NOT NULL UNIQUE,
     MatKhau VARCHAR2(255) NOT NULL,
+    VaiTro VARCHAR2(20) DEFAULT 'Khach' NOT NULL,
     CONSTRAINT chk_tk_gioitinh CHECK (GioiTinh IN ('M','F','O') OR GioiTinh IS NULL),
-    CONSTRAINT chk_tk_sdt CHECK (NOT REGEXP_LIKE(SDT, '[^0-9]', 'i') OR SDT IS NULL)
+    CONSTRAINT chk_tk_sdt CHECK (NOT REGEXP_LIKE(SDT, '[^0-9]', 'i') OR SDT IS NULL),
+    CONSTRAINT chk_tk_vaitro CHECK (VaiTro IN ('Khach', 'Admin'))
 );
 
--- KHÁCH HÀNG
-CREATE TABLE KHACH_HANG (
-    MaNguoiDung VARCHAR2(20) PRIMARY KEY,
-    LoaiThanhVien VARCHAR2(20) NOT NULL,
-    DiemTichLuy INT DEFAULT 0,
-    CONSTRAINT chk_kh_diemtich CHECK (DiemTichLuy >= 0),
-    CONSTRAINT chk_kh_loaitv CHECK (LoaiThanhVien IN ('Bronze','Silver','Gold','Platinum')),
-    CONSTRAINT fk_kh_tk FOREIGN KEY (MaNguoiDung) REFERENCES TAI_KHOAN(MaNguoiDung)
-);
-
--- QUẢN TRỊ VIÊN
-CREATE TABLE QUAN_TRI_VIEN (
-    MaNguoiDung VARCHAR2(20) PRIMARY KEY,
-    NgayBatDauLam DATE NOT NULL,
-    Luong DECIMAL(18,2) NOT NULL,
-    ChucVu VARCHAR2(50) NOT NULL,
-    CONSTRAINT chk_qtv_luong CHECK (Luong > 0),
-    CONSTRAINT fk_qtv_tk FOREIGN KEY (MaNguoiDung) REFERENCES TAI_KHOAN(MaNguoiDung)
-);
-
--- CA LÀM VIỆC
-CREATE TABLE CA_LAM_VIEC (
-    MaCa VARCHAR2(20) PRIMARY KEY,
-    MaNguoiDung VARCHAR2(20) NOT NULL,
-    CaLamViec VARCHAR2(50) NOT NULL,
-    CONSTRAINT fk_ca_qtv FOREIGN KEY (MaNguoiDung) REFERENCES QUAN_TRI_VIEN(MaNguoiDung)
-);
-
--- MẶT HÀNG
+-- 5. MAT_HANG
 CREATE TABLE MAT_HANG (
     MaHang VARCHAR2(20) PRIMARY KEY,
     TenHang VARCHAR2(200) NOT NULL,
@@ -165,7 +148,71 @@ CREATE TABLE MAT_HANG (
     CONSTRAINT chk_mh_loai CHECK (LoaiHang IN ('DO_AN','QUA_LUU_NIEM'))
 );
 
--- ĐƠN HÀNG
+-- ============================================================================
+-- BẢNG CON (Có Foreign Key trỏ về Bảng Cha)
+-- ============================================================================
+
+-- 6. PHONG_CHIEU (FK → RAP_CHIEU_PHIM)
+CREATE TABLE PHONG_CHIEU (
+    MaPhong   VARCHAR2(20) PRIMARY KEY,
+    MaRapPhim VARCHAR2(20) NOT NULL,
+    Ten       VARCHAR2(20) NOT NULL,
+    Loai      VARCHAR2(20) NOT NULL,
+    SucChua   INT NOT NULL,
+    SoGhe     INT NOT NULL,
+    CONSTRAINT chk_phong_suchua CHECK (SucChua > 0),
+    CONSTRAINT chk_phong_soghe CHECK (SoGhe > 0),
+    CONSTRAINT fk_phong_rap FOREIGN KEY (MaRapPhim) REFERENCES RAP_CHIEU_PHIM(MaRapPhim)
+);
+
+-- 7. GHE (FK → PHONG_CHIEU)
+CREATE TABLE GHE (
+    MaPhong VARCHAR2(20) NOT NULL,
+    HangGhe VARCHAR2(10) NOT NULL,
+    SoGhe INT NOT NULL,
+    LoaiGhe VARCHAR2(15) NOT NULL,
+    CONSTRAINT pk_ghe PRIMARY KEY (MaPhong, HangGhe, SoGhe),
+    CONSTRAINT chk_ghe_soghe CHECK (SoGhe > 0),
+    CONSTRAINT fk_ghe_phong FOREIGN KEY (MaPhong) REFERENCES PHONG_CHIEU(MaPhong)
+);
+
+-- 8. THE_LOAI_PHIM (FK → PHIM)
+CREATE TABLE THE_LOAI_PHIM (
+    MaPhim VARCHAR2(20) NOT NULL,
+    TheLoai VARCHAR2(50) NOT NULL,
+    CONSTRAINT pk_theloai PRIMARY KEY (MaPhim, TheLoai),
+    CONSTRAINT fk_theloai_phim FOREIGN KEY (MaPhim) REFERENCES PHIM(MaPhim)
+);
+
+-- 9. KHACH_HANG (FK → TAI_KHOAN)
+CREATE TABLE KHACH_HANG (
+    MaNguoiDung VARCHAR2(20) PRIMARY KEY,
+    LoaiThanhVien VARCHAR2(20) NOT NULL,
+    DiemTichLuy INT DEFAULT 0,
+    CONSTRAINT chk_kh_diemtich CHECK (DiemTichLuy >= 0),
+    CONSTRAINT chk_kh_loaitv CHECK (LoaiThanhVien IN ('Bronze','Silver','Gold','Platinum')),
+    CONSTRAINT fk_kh_tk FOREIGN KEY (MaNguoiDung) REFERENCES TAI_KHOAN(MaNguoiDung)
+);
+
+-- 10. QUAN_TRI_VIEN (FK → TAI_KHOAN)
+CREATE TABLE QUAN_TRI_VIEN (
+    MaNguoiDung VARCHAR2(20) PRIMARY KEY,
+    NgayBatDauLam DATE NOT NULL,
+    Luong DECIMAL(18,2) NOT NULL,
+    ChucVu VARCHAR2(50) NOT NULL,
+    CONSTRAINT chk_qtv_luong CHECK (Luong > 0),
+    CONSTRAINT fk_qtv_tk FOREIGN KEY (MaNguoiDung) REFERENCES TAI_KHOAN(MaNguoiDung)
+);
+
+-- 11. CA_LAM_VIEC (FK → QUAN_TRI_VIEN)
+CREATE TABLE CA_LAM_VIEC (
+    MaCa VARCHAR2(20) PRIMARY KEY,
+    MaNguoiDung VARCHAR2(20) NOT NULL,
+    CaLamViec VARCHAR2(50) NOT NULL,
+    CONSTRAINT fk_ca_qtv FOREIGN KEY (MaNguoiDung) REFERENCES QUAN_TRI_VIEN(MaNguoiDung)
+);
+
+-- 12. DON_HANG (FK → KHACH_HANG)
 CREATE TABLE DON_HANG (
     MaDonHang VARCHAR2(20) PRIMARY KEY,
     MaNguoiDung_KH VARCHAR2(20) NOT NULL,
@@ -178,7 +225,7 @@ CREATE TABLE DON_HANG (
     CONSTRAINT fk_dh_kh FOREIGN KEY (MaNguoiDung_KH) REFERENCES KHACH_HANG(MaNguoiDung)
 );
 
--- GỒM
+-- 13. GOM (FK → DON_HANG, MAT_HANG)
 CREATE TABLE GOM (
     MaDonHang VARCHAR2(20) NOT NULL,
     MaHang VARCHAR2(20) NOT NULL,
@@ -191,7 +238,7 @@ CREATE TABLE GOM (
     CONSTRAINT fk_gom_mh FOREIGN KEY (MaHang) REFERENCES MAT_HANG(MaHang)
 );
 
--- THANH TOÁN
+-- 14. THANH_TOAN (FK → DON_HANG)
 CREATE TABLE THANH_TOAN (
     MaThanhToan VARCHAR2(20) PRIMARY KEY,
     MaDonHang VARCHAR2(20) NOT NULL UNIQUE,
@@ -204,7 +251,7 @@ CREATE TABLE THANH_TOAN (
     CONSTRAINT fk_tt_dh FOREIGN KEY (MaDonHang) REFERENCES DON_HANG(MaDonHang)
 );
 
--- TRÌNH CHIẾU
+-- 15. TRINH_CHIEU (FK → RAP_CHIEU_PHIM, PHIM)
 CREATE TABLE TRINH_CHIEU (
     MaRapPhim VARCHAR2(20) NOT NULL,
     MaPhim VARCHAR2(20) NOT NULL,
@@ -213,7 +260,7 @@ CREATE TABLE TRINH_CHIEU (
     CONSTRAINT fk_tc_phim FOREIGN KEY (MaPhim) REFERENCES PHIM(MaPhim)
 );
 
--- SUẤT CHIẾU
+-- 16. SUAT_CHIEU (FK → PHIM, PHONG_CHIEU)
 CREATE TABLE SUAT_CHIEU (
     MaSuatChieu VARCHAR2(20) PRIMARY KEY,
     MaPhim VARCHAR2(20) NOT NULL,
@@ -230,7 +277,7 @@ CREATE TABLE SUAT_CHIEU (
     CONSTRAINT fk_sc_phong FOREIGN KEY (MaPhong) REFERENCES PHONG_CHIEU(MaPhong)
 );
 
--- VÉ XEM PHIM
+-- 17. VE_XEM_PHIM (FK → SUAT_CHIEU, GHE, KHACH_HANG, DON_HANG)
 CREATE TABLE VE_XEM_PHIM (
     MaVe VARCHAR2(20) PRIMARY KEY,
     MaSuatChieu VARCHAR2(20) NOT NULL,
@@ -250,7 +297,7 @@ CREATE TABLE VE_XEM_PHIM (
     CONSTRAINT fk_ve_dh FOREIGN KEY (MaDonHang) REFERENCES DON_HANG(MaDonHang)
 );
 
--- ÁP DỤNG KHUYẾN MÃI
+-- 18. AP_DUNG (FK → VE_XEM_PHIM, CHUONG_TRINH_KHUYEN_MAI)
 CREATE TABLE AP_DUNG (
     MaVe VARCHAR2(20) NOT NULL UNIQUE,
     MaKhuyenMai VARCHAR2(20) NOT NULL,
@@ -259,7 +306,7 @@ CREATE TABLE AP_DUNG (
     CONSTRAINT fk_ad_km FOREIGN KEY (MaKhuyenMai) REFERENCES CHUONG_TRINH_KHUYEN_MAI(MaKhuyenMai)
 );
 
--- ĐÁNH GIÁ
+-- 19. DANH_GIA (FK → KHACH_HANG, PHIM)
 CREATE TABLE DANH_GIA (
     MaDanhGia VARCHAR2(20) PRIMARY KEY,
     MaNguoiDung VARCHAR2(20) NOT NULL,
@@ -272,7 +319,7 @@ CREATE TABLE DANH_GIA (
     CONSTRAINT fk_dg_phim FOREIGN KEY (MaPhim) REFERENCES PHIM(MaPhim) ON DELETE CASCADE
 );
 
--- QUẢN LÝ
+-- 20. QUAN_LY (FK → QUAN_TRI_VIEN, RAP_CHIEU_PHIM)
 CREATE TABLE QUAN_LY (
     MaNguoiDung_QTV VARCHAR2(20) NOT NULL,
     MaRapPhim VARCHAR2(20) NOT NULL,
@@ -298,6 +345,6 @@ CREATE INDEX idx_ve_kh ON VE_XEM_PHIM(MaNguoiDung_KH);
 CREATE INDEX idx_ve_dh ON VE_XEM_PHIM(MaDonHang);
 CREATE INDEX idx_danhgia_kh ON DANH_GIA(MaNguoiDung);
 CREATE INDEX idx_danhgia_phim ON DANH_GIA(MaPhim);
-CREATE INDEX idx_thanhtoan_dh ON THANH_TOAN(MaDonHang);
+--CREATE INDEX idx_thanhtoan_dh ON THANH_TOAN(MaDonHang);
 
 COMMIT;

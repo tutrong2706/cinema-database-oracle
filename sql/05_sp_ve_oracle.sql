@@ -4,74 +4,65 @@
 -- 1. CREATE NEW TICKET BOOKING
 CREATE OR REPLACE PROCEDURE SP_DatVe (
     p_MaVe          IN VE_XEM_PHIM.MaVe%TYPE,
-    p_MaNguoiDung   IN VE_XEM_PHIM.MaNguoiDung%TYPE,
+    p_MaNguoiDung_KH IN VE_XEM_PHIM.MaNguoiDung_KH%TYPE,
     p_MaSuatChieu   IN VE_XEM_PHIM.MaSuatChieu%TYPE,
-    p_MaGhe         IN VE_XEM_PHIM.MaGhe%TYPE,
-    p_LoaiVe        IN VE_XEM_PHIM.LoaiVe%TYPE,
-    p_GiaVe         IN VE_XEM_PHIM.GiaVe%TYPE
+    p_MaPhong       IN VE_XEM_PHIM.MaPhong%TYPE,
+    p_HangGhe       IN VE_XEM_PHIM.HangGhe%TYPE,
+    p_SoGhe         IN VE_XEM_PHIM.SoGhe%TYPE,
+    p_GiaVeCuoi     IN VE_XEM_PHIM.GiaVeCuoi%TYPE,
+    p_MaDonHang     IN VE_XEM_PHIM.MaDonHang%TYPE
 )
 AS
-    v_seat_status   GHE.TrangThai%TYPE;
-    v_showtimeExists INT;
+    v_count NUMBER;
+    v_suatExists NUMBER;
 BEGIN
     -- Check if ticket code already exists
-    IF (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaVe = p_MaVe) > 0 THEN
+    SELECT COUNT(*) INTO v_count FROM VE_XEM_PHIM WHERE MaVe = p_MaVe;
+    IF v_count > 0 THEN
         RAISE_APPLICATION_ERROR(-20020, 'Mã vé đã tồn tại.');
     END IF;
 
-    -- Check if showtimes exist
-    SELECT COUNT(*) INTO v_showtimeExists FROM SUAT_CHIEU 
-    WHERE MaSuatChieu = p_MaSuatChieu AND TrangThai <> 'Hủy';
+    -- Check if showtimes exist and active
+    SELECT COUNT(*) INTO v_suatExists FROM SUAT_CHIEU 
+    WHERE MaSuatChieu = p_MaSuatChieu AND TrangThai = 'Đang mở';
     
-    IF v_showtimeExists = 0 THEN
+    IF v_suatExists = 0 THEN
         RAISE_APPLICATION_ERROR(-20021, 'Suất chiếu không tồn tại hoặc đã bị hủy.');
     END IF;
 
-    -- Check seat status
-    SELECT TrangThai INTO v_seat_status FROM GHE 
-    WHERE MaGhe = p_MaGhe;
+    -- Check if seat exists
+    SELECT COUNT(*) INTO v_count FROM GHE 
+    WHERE MaPhong = p_MaPhong AND HangGhe = p_HangGhe AND SoGhe = p_SoGhe;
 
-    IF v_seat_status IS NULL THEN
+    IF v_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20022, 'Ghế không tồn tại.');
     END IF;
 
-    IF v_seat_status NOT IN ('Trống', 'Có thể đặt') THEN
-        RAISE_APPLICATION_ERROR(-20023, 'Ghế không khả dụng.');
-    END IF;
-
     -- Insert ticket
-    INSERT INTO VE_XEM_PHIM (MaVe, MaNguoiDung, MaSuatChieu, MaGhe, LoaiVe, GiaVe, TrangThai, ThoiGianDat)
-    VALUES (p_MaVe, p_MaNguoiDung, p_MaSuatChieu, p_MaGhe, p_LoaiVe, p_GiaVe, 'Chờ thanh toán', SYSDATE);
-
-    -- Update seat status
-    UPDATE GHE SET TrangThai = 'Đang giữ' WHERE MaGhe = p_MaGhe;
+    INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai)
+    VALUES (p_MaVe, p_MaSuatChieu, p_MaPhong, p_HangGhe, p_SoGhe, p_MaNguoiDung_KH, p_MaDonHang, p_GiaVeCuoi, SYSDATE, 'Đã đặt');
 
     COMMIT;
 END SP_DatVe;
 /
 
--- 2. CONFIRM/COMPLETE TICKET PAYMENT
+-- 2. UPDATE TICKET STATUS TO PAID
 CREATE OR REPLACE PROCEDURE SP_ThanhToanVe (
     p_MaVe IN VE_XEM_PHIM.MaVe%TYPE
 )
 AS
-    v_GheCode GHE.MaGhe%TYPE;
+    v_count NUMBER;
 BEGIN
     -- Check if ticket exists
-    IF (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaVe = p_MaVe) = 0 THEN
+    SELECT COUNT(*) INTO v_count FROM VE_XEM_PHIM WHERE MaVe = p_MaVe;
+    IF v_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20024, 'Mã vé không tồn tại.');
     END IF;
 
-    -- Get associated seat
-    SELECT MaGhe INTO v_GheCode FROM VE_XEM_PHIM WHERE MaVe = p_MaVe;
-
     -- Update ticket status
     UPDATE VE_XEM_PHIM 
-    SET TrangThai = 'Đã thanh toán', ThoiGianThanhToan = SYSDATE 
+    SET TrangThai = 'Đã thanh toán'
     WHERE MaVe = p_MaVe;
-
-    -- Update seat to sold
-    UPDATE GHE SET TrangThai = 'Đã bán' WHERE MaGhe = v_GheCode;
 
     COMMIT;
 END SP_ThanhToanVe;
@@ -82,27 +73,18 @@ CREATE OR REPLACE PROCEDURE SP_HuyVe (
     p_MaVe IN VE_XEM_PHIM.MaVe%TYPE
 )
 AS
-    v_GheCode       GHE.MaGhe%TYPE;
-    v_TicketStatus  VE_XEM_PHIM.TrangThai%TYPE;
+    v_TicketStatus VE_XEM_PHIM.TrangThai%TYPE;
+    v_count NUMBER;
 BEGIN
     -- Get ticket info
-    SELECT MaGhe, TrangThai INTO v_GheCode, v_TicketStatus 
-    FROM VE_XEM_PHIM WHERE MaVe = p_MaVe;
-
-    IF v_GheCode IS NULL THEN
+    SELECT TrangThai INTO v_TicketStatus FROM VE_XEM_PHIM WHERE MaVe = p_MaVe;
+    
+    IF v_TicketStatus IS NULL THEN
         RAISE_APPLICATION_ERROR(-20024, 'Mã vé không tồn tại.');
     END IF;
 
-    -- Cannot cancel if already paid and viewed
-    IF v_TicketStatus = 'Đã xem' THEN
-        RAISE_APPLICATION_ERROR(-20025, 'Không thể hủy vé đã xem.');
-    END IF;
-
-    -- Update ticket status
+    -- Update ticket status to cancelled
     UPDATE VE_XEM_PHIM SET TrangThai = 'Hủy' WHERE MaVe = p_MaVe;
-
-    -- Reset seat to available
-    UPDATE GHE SET TrangThai = 'Trống' WHERE MaGhe = v_GheCode;
 
     COMMIT;
 END SP_HuyVe;
@@ -110,86 +92,140 @@ END SP_HuyVe;
 
 -- 4. GET TICKET BY CODE
 CREATE OR REPLACE PROCEDURE SP_Get_Ve_ByCode (
-    p_MaVe IN VE_XEM_PHIM.MaVe%TYPE
+    p_MaVe IN VE_XEM_PHIM.MaVe%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM VE_XEM_PHIM WHERE MaVe = p_MaVe;
 END SP_Get_Ve_ByCode;
 /
 
 -- 5. GET ALL TICKETS FOR USER
 CREATE OR REPLACE PROCEDURE SP_Get_Ve_ByNguoiDung (
-    p_MaNguoiDung IN VE_XEM_PHIM.MaNguoiDung%TYPE
+    p_MaNguoiDung_KH IN VE_XEM_PHIM.MaNguoiDung_KH%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT 
         v.MaVe,
-        v.MaNguoiDung,
+        v.MaNguoiDung_KH,
         v.MaSuatChieu,
         p.TenPhim,
-        v.MaGhe,
-        v.LoaiVe,
-        v.GiaVe,
+        v.MaPhong,
+        v.HangGhe,
+        v.SoGhe,
+        v.GiaVeCuoi,
         v.TrangThai,
-        v.ThoiGianDat
+        v.NgayDat
     FROM VE_XEM_PHIM v
     JOIN SUAT_CHIEU s ON v.MaSuatChieu = s.MaSuatChieu
     JOIN PHIM p ON s.MaPhim = p.MaPhim
-    WHERE v.MaNguoiDung = p_MaNguoiDung
-    ORDER BY v.ThoiGianDat DESC;
+    WHERE v.MaNguoiDung_KH = p_MaNguoiDung_KH
+    ORDER BY v.NgayDat DESC;
 END SP_Get_Ve_ByNguoiDung;
 /
 
 -- 6. GET AVAILABLE SEATS FOR SHOWTIMES
 CREATE OR REPLACE PROCEDURE SP_Get_GheTrong (
-    p_MaSuatChieu IN SUAT_CHIEU.MaSuatChieu%TYPE
+    p_MaSuatChieu IN SUAT_CHIEU.MaSuatChieu%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
+    v_MaPhong VARCHAR2(20);
 BEGIN
+    -- Get room from showtimes
+    SELECT MaPhong INTO v_MaPhong FROM SUAT_CHIEU WHERE MaSuatChieu = p_MaSuatChieu;
+    
+    OPEN p_cursor FOR
     SELECT 
-        g.MaGhe,
         g.MaPhong,
         g.HangGhe,
-        g.CotGhe,
-        g.TrangThai
+        g.SoGhe,
+        g.LoaiGhe
     FROM GHE g
-    WHERE g.MaPhong = (SELECT MaPhong FROM SUAT_CHIEU WHERE MaSuatChieu = p_MaSuatChieu)
-    AND g.TrangThai IN ('Trống', 'Có thể đặt')
-    ORDER BY g.HangGhe, g.CotGhe;
+    WHERE g.MaPhong = v_MaPhong
+    AND NOT EXISTS (
+        SELECT 1 FROM VE_XEM_PHIM v 
+        WHERE v.MaSuatChieu = p_MaSuatChieu 
+        AND v.MaPhong = g.MaPhong 
+        AND v.HangGhe = g.HangGhe 
+        AND v.SoGhe = g.SoGhe
+        AND v.TrangThai IN ('Đã đặt', 'Đã thanh toán')
+    )
+    ORDER BY g.HangGhe, g.SoGhe;
 END SP_Get_GheTrong;
 /
 
 -- 7. GET BOOKED SEATS FOR SHOWTIMES
 CREATE OR REPLACE PROCEDURE SP_Get_GheDaDat (
-    p_MaSuatChieu IN SUAT_CHIEU.MaSuatChieu%TYPE
+    p_MaSuatChieu IN SUAT_CHIEU.MaSuatChieu%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
-    SELECT DISTINCT g.MaGhe FROM GHE g
-    JOIN VE_XEM_PHIM v ON g.MaGhe = v.MaGhe
+    OPEN p_cursor FOR
+    SELECT DISTINCT 
+        v.MaPhong,
+        v.HangGhe,
+        v.SoGhe
+    FROM VE_XEM_PHIM v
     WHERE v.MaSuatChieu = p_MaSuatChieu
-    AND v.TrangThai IN ('Chờ thanh toán', 'Đã thanh toán')
-    ORDER BY g.MaGhe;
+    AND v.TrangThai IN ('Đã đặt', 'Đã thanh toán')
+    ORDER BY v.HangGhe, v.SoGhe;
 END SP_Get_GheDaDat;
 /
 
--- 8. UPDATE TICKET STATUS TO VIEWED
-CREATE OR REPLACE PROCEDURE SP_CapNhatVeDaXem (
-    p_MaVe IN VE_XEM_PHIM.MaVe%TYPE
+-- 8. GET TICKETS BY ORDER
+CREATE OR REPLACE PROCEDURE SP_Get_Ve_ByDonHang (
+    p_MaDonHang IN VE_XEM_PHIM.MaDonHang%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
-    -- Check if ticket is paid
-    IF (SELECT TrangThai FROM VE_XEM_PHIM WHERE MaVe = p_MaVe) <> 'Đã thanh toán' THEN
-        RAISE_APPLICATION_ERROR(-20026, 'Chỉ có thể đánh dấu vé đã thanh toán là đã xem.');
-    END IF;
-
-    UPDATE VE_XEM_PHIM 
-    SET TrangThai = 'Đã xem', ThoiGianXem = SYSDATE 
-    WHERE MaVe = p_MaVe;
-
-    COMMIT;
-END SP_CapNhatVeDaXem;
+    OPEN p_cursor FOR
+    SELECT 
+        v.MaVe,
+        v.MaSuatChieu,
+        p.TenPhim,
+        v.HangGhe,
+        v.SoGhe,
+        v.GiaVeCuoi,
+        v.TrangThai
+    FROM VE_XEM_PHIM v
+    JOIN SUAT_CHIEU s ON v.MaSuatChieu = s.MaSuatChieu
+    JOIN PHIM p ON s.MaPhim = p.MaPhim
+    WHERE v.MaDonHang = p_MaDonHang
+    ORDER BY v.NgayDat DESC;
+END SP_Get_Ve_ByDonHang;
 /
+
+-- 9. GET TICKET COUNT FOR SHOWTIMES
+CREATE OR REPLACE PROCEDURE SP_Get_SoVeDaDat (
+    p_MaSuatChieu IN SUAT_CHIEU.MaSuatChieu%TYPE,
+    p_SoVeDaDat OUT NUMBER
+)
+AS
+BEGIN
+    SELECT COUNT(*) INTO p_SoVeDaDat FROM VE_XEM_PHIM
+    WHERE MaSuatChieu = p_MaSuatChieu
+    AND TrangThai IN ('Đã đặt', 'Đã thanh toán');
+END SP_Get_SoVeDaDat;
+/
+
+-- 10. GET TOTAL REVENUE FROM TICKETS
+CREATE OR REPLACE PROCEDURE SP_Get_DoanhThuVe (
+    p_MaSuatChieu IN SUAT_CHIEU.MaSuatChieu%TYPE,
+    p_DoanhThu OUT NUMBER
+)
+AS
+BEGIN
+    SELECT COALESCE(SUM(GiaVeCuoi), 0) INTO p_DoanhThu FROM VE_XEM_PHIM
+    WHERE MaSuatChieu = p_MaSuatChieu
+    AND TrangThai = 'Đã thanh toán';
+END SP_Get_DoanhThuVe;
+/
+

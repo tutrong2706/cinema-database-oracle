@@ -5,23 +5,60 @@ import { useNavigate } from 'react-router-dom';
 const AdminPage = () => {
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const DEFAULT_POSTER = 'https://via.placeholder.com/40x56?text=N/A'; // Placeholder cho Admin
+    const DEFAULT_POSTER = 'https://via.placeholder.com/40x56?text=N/A';
+
+    // Helper: Convert camelCase keys to UPPERCASE
+    const toUppercaseKeys = (obj) => {
+        if (!obj) return obj;
+        const result = {};
+        for (const key in obj) {
+            const uppercaseKey = key.replace(/([A-Z])/g, '_$1').toUpperCase().replace(/^_/, '');
+            result[uppercaseKey] = obj[key];
+        }
+        return result;
+    };
+
+    const [activeTab, setActiveTab] = useState('phims'); // phims, suatchieu, thongke, baocao
+    const [userStats, setUserStats] = useState(null);
+    const [revenue, setRevenue] = useState(null);
+    const [orders, setOrders] = useState([]);
+    const [suatchieu, setSuatchieu] = useState([]);
 
     useEffect(() => {
-        // ... (Giữ nguyên logic kiểm tra quyền) ...
-        if (user.role !== 'Admin') {
+        // Kiểm tra quyền admin
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (user.vaiTro !== 'Admin') {
             alert("Bạn không có quyền truy cập trang này!");
             navigate('/');
         }
-    }, []);
+        
+        // Load dashboard data
+        loadDashboardData();
+    }, [navigate]);
+
+    const loadDashboardData = async () => {
+        try {
+            const [statsRes, revenueRes, ordersRes] = await Promise.all([
+                axiosClient.get('/admin/users/count').catch(() => null),
+                axiosClient.get('/admin/revenue').catch(() => null),
+                axiosClient.get('/admin/orders').catch(() => null)
+            ]);
+            
+            if (statsRes?.data?.meta) setUserStats(statsRes.data.meta);
+            if (revenueRes?.data?.meta) setRevenue(revenueRes.data.meta);
+            if (ordersRes?.data?.meta) setOrders(ordersRes.data.meta);
+        } catch (error) {
+            console.error('Load dashboard error:', error);
+        }
+    };
 
     const [phims, setPhims] = useState([]);
     const [keyword, setKeyword] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPhim, setEditingPhim] = useState(null);
     const [formData, setFormData] = useState({
-        MaPhim: '', TenPhim: '', ThoiLuong: 0, NgonNgu: '', QuocGia: '',
-        DaoDien: '', DienVienChinh: '', NgayKhoiChieu: '', MoTaNoiDung: '', DoTuoi: 13, ChuDePhim: '', Anh: ''
+        MAPHIM: '', TENPHIM: '', THOILUONG: 0, NGONNGU: '', QUOCGIA: '',
+        DAODIEN: '', DIENVIENCHINH: '', NGAYKHOICHIEU: '', MOTANOINDUNG: '', DOTUOI: 13, CHUDEPHIM: '', ANH: ''
     });
 
     const fetchPhims = async () => {
@@ -32,7 +69,18 @@ const AdminPage = () => {
         } catch (error) { console.error(error); }
     };
 
+    const fetchSuatchieu = async () => {
+        try {
+            const res = await axiosClient.get('/admin/suats');
+            setSuatchieu(res.data.meta || []);
+        } catch (error) { console.error('Fetch suất chiếu error:', error); }
+    };
+
     useEffect(() => { fetchPhims(); }, [keyword]);
+    
+    useEffect(() => { 
+        if (activeTab === 'suatchieu') fetchSuatchieu(); 
+    }, [activeTab]);
 
     // ... (Giữ nguyên handleDelete và handleSubmit) ...
     const handleDelete = async (id) => {
@@ -52,11 +100,11 @@ const AdminPage = () => {
             // Chuyển đổi các trường số sang number
             const dataToSubmit = {
                 ...formData,
-                ThoiLuong: parseInt(formData.ThoiLuong),
-                DoTuoi: parseInt(formData.DoTuoi)
+                THOILUONG: parseInt(formData.THOILUONG),
+                DOTUOI: parseInt(formData.DOTUOI)
             };
 
-            if (editingPhim) await axiosClient.put(`/admin/phims/${editingPhim.MaPhim}`, dataToSubmit);
+            if (editingPhim) await axiosClient.put(`/admin/phims/${editingPhim.MAPHIM}`, dataToSubmit);
             else await axiosClient.post('/admin/phims', dataToSubmit);
             
             alert(editingPhim ? "Cập nhật thành công!" : "Thêm mới thành công!");
@@ -71,7 +119,7 @@ const AdminPage = () => {
     const openEdit = (phim) => {
         // ... (Giữ nguyên logic) ...
         setEditingPhim(phim);
-        setFormData({ ...phim, NgayKhoiChieu: phim.NgayKhoiChieu.split('T')[0] });
+        setFormData({ ...phim, NGAYKHOICHIEU: phim.NGAYKHOICHIEU.split('T')[0] });
         setIsModalOpen(true);
     };
 
@@ -79,18 +127,18 @@ const AdminPage = () => {
         setEditingPhim(null);
         // Cài đặt giá trị mặc định cho form thêm mới
         setFormData({
-            MaPhim: 'PH888', 
-            TenPhim: '3 heo con', 
-            ThoiLuong: 90, // Mặc định 90 phút
-            NgonNgu: 'Tiếng Việt', // Mặc định Tiếng Việt
-            QuocGia: 'Việt Nam', // Mặc định Việt Nam
-            DaoDien: 'Trọngbro', 
-            DienVienChinh: 'Thốngbro', 
-            NgayKhoiChieu: new Date().toISOString().split('T')[0], // Mặc định là ngày hôm nay
-            MoTaNoiDung: 'Phim hay', 
-            DoTuoi: 13, // Mặc định 13+
-            ChuDePhim: 'Hành động', // Mặc định thể loại
-            Anh: 'https://i.pinimg.com/564x/d3/d4/19/d3d419e944662ef50d5de9216a06b82c.jpg'
+            MAPHIM: 'PH888', 
+            TENPHIM: '3 heo con', 
+            THOILUONG: 90, // Mặc định 90 phút
+            NGONNGU: 'Tiếng Việt', // Mặc định Tiếng Việt
+            QUOCGIA: 'Việt Nam', // Mặc định Việt Nam
+            DAODIEN: 'Trọngbro', 
+            DIENVIENCHINH: 'Thốngbro', 
+            NGAYKHOICHIEU: new Date().toISOString().split('T')[0], // Mặc định là ngày hôm nay
+            MOTANOINDUNG: 'Phim hay', 
+            DOTUOI: 13, // Mặc định 13+
+            CHUDEPHIM: 'Hành động', // Mặc định thể loại
+            ANH: 'https://i.pinimg.com/564x/d3/d4/19/d3d419e944662ef50d5de9216a06b82c.jpg'
         });
         setIsModalOpen(true);
     };
@@ -100,27 +148,84 @@ const AdminPage = () => {
             <div className="container mx-auto">
                 {/* Header Admin */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                    <h1 className="text-3xl font-extrabold text-white border-l-4 border-[#00E5FF] pl-4">QUẢN LÝ PHIM</h1>
-                    <div className="flex gap-3">
-                        <button onClick={openAdd} className="!bg-[#00E5FF] text-black px-5 py-2 rounded-lg font-bold hover:!bg-[#00cce6] transition shadow-lg">
-                            + Thêm Phim Mới
-                        </button>
-                        <button onClick={fetchPhims} className="!bg-gray-800 text-white px-5 py-2 rounded-lg font-bold hover:bg-gray-700 transition border border-gray-600">
-                            🔄 Refresh
-                        </button>
-                    </div>
+                    <h1 className="text-3xl font-extrabold text-white border-l-4 border-[#00E5FF] pl-4">DASHBOARD QUẢN LÝ</h1>
+                    <button 
+                        onClick={() => {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            navigate('/login');
+                        }}
+                        className="!bg-red-600/30 text-red-300 hover:!bg-red-600 hover:text-white px-5 py-2 rounded-lg font-bold transition"
+                    >
+                        Đăng Xuất
+                    </button>
                 </div>
 
-                {/* Search */}
-                <div className="mb-6">
-                    <input 
-                        type="text" 
-                        placeholder="Tìm kiếm theo tên phim...." 
-                        className="w-full p-4 rounded-xl bg-[#1a1a1a] text-white border border-gray-700 focus:border-[#00E5FF] outline-none transition placeholder-gray-500"
-                        value={keyword}
-                        onChange={(e) => setKeyword(e.target.value)}
-                    />
+                {/* Tab Navigation */}
+                <div className="flex gap-4 mb-8 border-b border-gray-700 pb-4">
+                    <button
+                        onClick={() => setActiveTab('phims')}
+                        className={`px-6 py-2 font-bold rounded-lg transition ${
+                            activeTab === 'phims'
+                                ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]'
+                                : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        🎬 Quản Lý Phim
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('suatchieu')}
+                        className={`px-6 py-2 font-bold rounded-lg transition ${
+                            activeTab === 'suatchieu'
+                                ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]'
+                                : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        🎞 Quản Lý Suất Chiếu
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('thongke')}
+                        className={`px-6 py-2 font-bold rounded-lg transition ${
+                            activeTab === 'thongke'
+                                ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]'
+                                : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        📊 Thống Kê
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('baocao')}
+                        className={`px-6 py-2 font-bold rounded-lg transition ${
+                            activeTab === 'baocao'
+                                ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]'
+                                : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                        📈 Báo Cáo Doanh Thu
+                    </button>
                 </div>
+
+                {/* TAB 1: PHIMS - Quản Lý Phim */}
+                {activeTab === 'phims' && (
+                    <>
+                        {/* Header Actions */}
+                        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                            <input 
+                                type="text" 
+                                placeholder="Tìm kiếm theo tên phim...." 
+                                className="flex-1 p-4 rounded-xl bg-[#1a1a1a] text-white border border-gray-700 focus:border-[#00E5FF] outline-none transition placeholder-gray-500"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                            />
+                            <div className="flex gap-3">
+                                <button onClick={openAdd} className="bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black px-5 py-2 rounded-lg font-bold transition transform hover:scale-105 shadow-[0_0_15px_rgba(0,229,255,0.4)]">
+                                    + Thêm Phim Mới
+                                </button>
+                                <button onClick={fetchPhims} className="!bg-gray-800 text-white px-5 py-2 rounded-lg font-bold hover:bg-gray-700 transition border border-gray-600">
+                                    🔄 Refresh
+                                </button>
+                            </div>
+                        </div>
 
                 {/* Table */}
                 <div className="bg-[#1a1a1a] rounded-xl overflow-x-auto border border-gray-800 shadow-2xl">
@@ -140,48 +245,200 @@ const AdminPage = () => {
                         </thead>
                         <tbody className="divide-y divide-gray-800">
                             {phims.map(p => (
-                                <tr key={p.MaPhim} className="hover:bg-gray-800/50 transition">
-                                    <td className="p-4 text-gray-400 font-mono text-xs">{p.MaPhim}</td>
+                                <tr key={p.MAPHIM} className="hover:bg-gray-800/50 transition">
+                                    <td className="p-4 text-gray-400 font-mono text-xs">{p.MAPHIM}</td>
                                     <td className="p-4">
                                         <img 
-                                            src={p.Anh && typeof p.Anh === 'string' && p.Anh.startsWith('http') ? p.Anh : DEFAULT_POSTER} 
-                                            alt={p.TenPhim} 
+                                            src={p.ANH && typeof p.ANH === 'string' && p.ANH.startsWith('http') ? p.ANH : DEFAULT_POSTER} 
+                                            alt={p.TENPHIM} 
                                             className="w-10 h-14 object-cover rounded bg-gray-700 border border-gray-600"
                                             onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_POSTER; }}
                                         />
                                     </td>
-                                    <td className="p-4 font-bold text-white max-w-[200px] truncate">{p.TenPhim}</td>
-                                    <td className="p-4 text-gray-300">{new Date(p.NgayKhoiChieu).getFullYear()}</td>
-                                    <td className="p-4 text-gray-300">{p.ThoiLuong}p</td>
-                                    <td className="p-4 text-yellow-400 font-bold">★ {p.DiemDanhGia || 'N/A'}</td>
+                                    <td className="p-4 font-bold text-white max-w-[200px] truncate">{p.TENPHIM}</td>
+                                    <td className="p-4 text-gray-300">{new Date(p.NGAYKHOICHIEU).getFullYear()}</td>
+                                    <td className="p-4 text-gray-300">{p.THOILUONG}p</td>
+                                    <td className="p-4 text-yellow-400 font-bold">★ {p.DIEMDANHGIA || 'N/A'}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                            p.HieuQua?.includes('Rất Hot') ? 'bg-red-500/20 text-red-400' :
-                                            p.HieuQua?.includes('Bình thường') ? 'bg-blue-500/20 text-blue-400' :
+                                            p.HIEUQUA?.includes('Rất Hot') ? 'bg-red-500/20 text-red-400' :
+                                            p.HIEUQUA?.includes('Bình thường') ? 'bg-blue-500/20 text-blue-400' :
                                             'bg-gray-500/20 text-gray-400'
                                         }`}>
-                                            {p.HieuQua || 'Chưa có dữ liệu'}
+                                            {p.HIEUQUA || 'Chưa có dữ liệu'}
                                         </span>
                                     </td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                            p.HieuQuaMoi?.includes('Tuyệt vời') ? 'bg-purple-500/20 text-purple-400' :
-                                            p.HieuQuaMoi?.includes('Hot') ? 'bg-red-500/20 text-red-400' :
-                                            p.HieuQuaMoi?.includes('Bình thường') ? 'bg-blue-500/20 text-blue-400' :
+                                            p.HIEUQUAMOI?.includes('Tuyệt vời') ? 'bg-purple-500/20 text-purple-400' :
+                                            p.HIEUQUAMOI?.includes('Hot') ? 'bg-red-500/20 text-red-400' :
+                                            p.HIEUQUAMOI?.includes('Bình thường') ? 'bg-blue-500/20 text-blue-400' :
                                             'bg-gray-500/20 text-gray-400'
                                         }`}>
-                                            {p.HieuQuaMoi || 'Chưa có dữ liệu'}
+                                            {p.HIEUQUAMOI || 'Chưa có dữ liệu'}
                                         </span>
                                     </td>
                                     <td className="p-4 flex justify-end gap-2 whitespace-nowrap">
                                         <button onClick={() => openEdit(p)} className="!bg-blue-600/30 text-blue-300 hover:!bg-blue-600 hover:text-white px-3 py-1 rounded transition text-sm font-semibold">Sửa</button>
-                                        <button onClick={() => handleDelete(p.MaPhim)} className="!bg-red-600/30 text-red-300 hover:!bg-red-600 hover:text-white px-3 py-1 rounded transition text-sm font-semibold">Xóa</button>
+                                        <button onClick={() => handleDelete(p.MAPHIM)} className="!bg-red-600/30 text-red-300 hover:!bg-red-600 hover:text-white px-3 py-1 rounded transition text-sm font-semibold">Xóa</button>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
                 </div>
+                    </>
+                )}
+
+                {/* TAB 2: SUẤT CHIẾU */}
+                {activeTab === 'suatchieu' && (
+                    <>
+                    <div className="bg-[#1a1a1a] rounded-xl overflow-x-auto border border-gray-800 shadow-2xl">
+                        <table className="min-w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
+                                    <th className="p-4 font-semibold">Mã Suất</th>
+                                    <th className="p-4 font-semibold">Phim</th>
+                                    <th className="p-4 font-semibold">Rạp</th>
+                                    <th className="p-4 font-semibold">Ngày Chiếu</th>
+                                    <th className="p-4 font-semibold">Giờ Bắt Đầu</th>
+                                    <th className="p-4 font-semibold">Trạng Thái</th>
+                                    <th className="p-4 font-semibold text-right">Chức Năng</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                                {suatchieu.length > 0 ? (
+                                    suatchieu.map(sc => (
+                                        <tr key={sc.MASUATCHIEU} className="hover:bg-gray-800/50 transition">
+                                            <td className="p-4 text-gray-400 font-mono text-xs">{sc.MASUATCHIEU}</td>
+                                            <td className="p-4 font-bold text-white">{sc.TENPHIM || 'N/A'}</td>
+                                            <td className="p-4 text-gray-300">{sc.TENRAP || 'N/A'}</td>
+                                            <td className="p-4 text-gray-300">{sc.NGAYCHIEU ? new Date(sc.NGAYCHIEU).toLocaleDateString('vi-VN') : 'N/A'}</td>
+                                            <td className="p-4 text-gray-300">{sc.GIOBATDAU ? new Date(sc.GIOBATDAU).toLocaleTimeString('vi-VN') : 'N/A'}</td>
+                                            <td className="p-4">
+                                                <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                                    sc.TRANGTHAI === 'Mở bán' ? 'bg-green-500/20 text-green-400' :
+                                                    sc.TRANGTHAI === 'Kết thúc' ? 'bg-gray-500/20 text-gray-400' :
+                                                    'bg-yellow-500/20 text-yellow-400'
+                                                }`}>
+                                                    {sc.TRANGTHAI}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 flex justify-end gap-2">
+                                                <button className="!bg-blue-600/30 text-blue-300 hover:!bg-blue-600 px-3 py-1 rounded text-sm font-semibold">Sửa</button>
+                                                <button className="!bg-red-600/30 text-red-300 hover:!bg-red-600 px-3 py-1 rounded text-sm font-semibold">Xóa</button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="p-8 text-center text-gray-400">Chưa có suất chiếu nào</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                    </>
+                )}
+
+                {/* TAB 3: THỐNG KÊ */}
+                {activeTab === 'thongke' && (
+                    <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Total Users */}
+                        <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-2xl p-8 border border-blue-700 shadow-2xl">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-300 text-sm mb-2">👥 Tổng Người Dùng</p>
+                                    <p className="text-4xl font-bold text-white">{userStats?.totalUsers || 0}</p>
+                                </div>
+                                <div className="text-5xl opacity-20">👥</div>
+                            </div>
+                        </div>
+
+                        {/* Admin Count */}
+                        <div className="bg-gradient-to-br from-red-900 to-red-800 rounded-2xl p-8 border border-red-700 shadow-2xl">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-300 text-sm mb-2">👑 Admin</p>
+                                    <p className="text-4xl font-bold text-white">{userStats?.admins || 0}</p>
+                                </div>
+                                <div className="text-5xl opacity-20">👑</div>
+                            </div>
+                        </div>
+
+                        {/* Customer Count */}
+                        <div className="bg-gradient-to-br from-green-900 to-green-800 rounded-2xl p-8 border border-green-700 shadow-2xl">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-gray-300 text-sm mb-2">🎫 Khách Hàng</p>
+                                    <p className="text-4xl font-bold text-white">{userStats?.customers || 0}</p>
+                                </div>
+                                <div className="text-5xl opacity-20">🎫</div>
+                            </div>
+                        </div>
+                    </div>
+                    </>
+                )}
+
+                {/* TAB 4: BÁO CÁO DOANH THU */}
+                {activeTab === 'baocao' && (
+                    <>
+                    <div className="space-y-6">
+                        {/* Revenue Summary */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-2xl p-8 border border-purple-700 shadow-2xl">
+                                <p className="text-gray-300 text-sm mb-2">💰 Tổng Doanh Thu</p>
+                                <p className="text-4xl font-bold text-white">
+                                    {parseInt(revenue?.TONGDOANHTHU || 0).toLocaleString('vi-VN')} đ
+                                </p>
+                                <p className="text-gray-400 text-sm mt-3">Từ các đơn hàng đã thanh toán</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-orange-900 to-orange-800 rounded-2xl p-8 border border-orange-700 shadow-2xl">
+                                <p className="text-gray-300 text-sm mb-2">🛒 Tổng Đơn Hàng</p>
+                                <p className="text-4xl font-bold text-white">{revenue?.SODONHANG || 0}</p>
+                                <p className="text-gray-400 text-sm mt-3">Đơn hàng đã hoàn tất</p>
+                            </div>
+                        </div>
+
+                        {/* Orders List */}
+                        <div className="bg-[#1a1a1a] rounded-xl overflow-x-auto border border-gray-800 shadow-2xl">
+                            <h3 className="text-xl font-bold text-white p-6 border-b border-gray-800">📋 Danh Sách Tất Cả Đơn Hàng</h3>
+                            <table className="min-w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
+                                        <th className="p-4 font-semibold">Mã Đơn</th>
+                                        <th className="p-4 font-semibold">Khách Hàng</th>
+                                        <th className="p-4 font-semibold">Thời Gian</th>
+                                        <th className="p-4 font-semibold">Tổng Tiền</th>
+                                        <th className="p-4 font-semibold">Trạng Thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {orders.slice(0, 10).map(order => (
+                                        <tr key={order.MADONHANG} className="hover:bg-gray-800/50 transition">
+                                            <td className="p-4 text-gray-400 font-mono text-xs">{order.MADONHANG}</td>
+                                            <td className="p-4 text-white">{order.HOTEN || 'N/A'}</td>
+                                            <td className="p-4 text-gray-300">{new Date(order.THOIGIANDAT).toLocaleString('vi-VN')}</td>
+                                            <td className="p-4 text-yellow-400 font-bold">{parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ</td>
+                                            <td className="p-4">
+                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                    order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400' :
+                                                    order.TRANGTHAI === 'Hủy' ? 'bg-red-500/20 text-red-400' :
+                                                    'bg-yellow-500/20 text-yellow-400'
+                                                }`}>
+                                                    {order.TRANGTHAI}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    </>
+                )}
             </div>
 
             {/* Modal Form (Đã tối ưu style) */}
@@ -191,27 +448,27 @@ const AdminPage = () => {
                         <h2 className="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-3">{editingPhim ? 'Chỉnh Sửa Phim' : 'Thêm Phim Mới'}</h2>
                         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Input Fields (Đã sắp xếp lại và tối ưu style) */}
-                            {['MaPhim', 'TenPhim', 'ThoiLuong', 'NgonNgu', 'QuocGia', 'DaoDien', 'DienVienChinh', 'DoTuoi', 'ChuDePhim'].map((field) => (
+                            {['MAPHIM', 'TENPHIM', 'THOILUONG', 'NGONNGU', 'QUOCGIA', 'DAODIEN', 'DIENVIENCHINH', 'DOTUOI', 'CHUDEPHIM'].map((field) => (
                                 <div key={field}>
                                     <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">{field}</label>
                                     <input 
-                                        type={field === 'ThoiLuong' || field === 'DoTuoi' ? 'number' : 'text'}
-                                        required={field !== 'MaPhim' || editingPhim} /* Bắt buộc trừ MaPhim khi chỉnh sửa */
-                                        disabled={field === 'MaPhim' && !!editingPhim}
+                                        type={field === 'THOILUONG' || field === 'DOTUOI' ? 'number' : 'text'}
+                                        required={field !== 'MAPHIM' || editingPhim} /* Bắt buộc trừ MAPHIM khi chỉnh sửa */
+                                        disabled={field === 'MAPHIM' && !!editingPhim}
                                         value={formData[field]} 
                                         onChange={e => setFormData({...formData, [field]: e.target.value})} 
                                         className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
                                     />
                                 </div>
                             ))}
-                            {/* NgayKhoiChieu nằm riêng để đảm bảo loại 'date' */}
+                            {/* NGAYKHOICHIEU nằm riêng để đảm bảo loại 'date' */}
                             <div>
                                 <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Ngày Khởi Chiếu</label>
                                 <input 
                                     type="date" 
                                     required 
-                                    value={formData.NgayKhoiChieu} 
-                                    onChange={e => setFormData({...formData, NgayKhoiChieu: e.target.value})} 
+                                    value={formData.NGAYKHOICHIEU} 
+                                    onChange={e => setFormData({...formData, NGAYKHOICHIEU: e.target.value})} 
                                     className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
                                 />
                             </div>
@@ -220,8 +477,8 @@ const AdminPage = () => {
                                 <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">URL Ảnh Poster</label>
                                 <input 
                                     type="text" 
-                                    value={formData.Anh} 
-                                    onChange={e => setFormData({...formData, Anh: e.target.value})} 
+                                    value={formData.ANH} 
+                                    onChange={e => setFormData({...formData, ANH: e.target.value})} 
                                     className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition" 
                                     placeholder="https://..."
                                 />
@@ -230,15 +487,15 @@ const AdminPage = () => {
                                 <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Mô Tả Nội Dung</label>
                                 <textarea 
                                     rows="4" 
-                                    value={formData.MoTaNoiDung} 
-                                    onChange={e => setFormData({...formData, MoTaNoiDung: e.target.value})} 
+                                    value={formData.MOTANOINDUNG} 
+                                    onChange={e => setFormData({...formData, MOTANOINDUNG: e.target.value})} 
                                     className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
                                 ></textarea>
                             </div>
 
                             <div className="col-span-2 flex justify-end gap-4 mt-4">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 !bg-gray-700 text-white rounded-lg hover:!bg-gray-600 font-semibold">Hủy</button>
-                                <button type="submit" className="px-6 py-2 !bg-[#00E5FF] text-black font-bold rounded-lg hover:!bg-[#00cce6] shadow-lg">Lưu</button>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition">Hủy</button>
+                                <button type="submit" className="px-6 py-2 bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black font-bold rounded-lg transition transform hover:scale-105 shadow-[0_0_15px_rgba(0,229,255,0.4)]">Lưu</button>
                             </div>
                         </form>
                     </div>

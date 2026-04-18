@@ -23,21 +23,28 @@ const RevenueReportPage = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    
+    // Filter & Sort states
+    const [sortBy, setSortBy] = useState('revenue');  // 'revenue', 'tickets', 'name'
+    const [sortOrder, setSortOrder] = useState('desc');  // 'asc', 'desc'
+    const [filterMinRevenue, setFilterMinRevenue] = useState(0);
+    const [filterMaxRevenue, setFilterMaxRevenue] = useState(999999999);
 
     // Kiểm tra quyền Admin
     useEffect(() => {
-        if (user.role !== 'Admin') {
+        if (user.vaiTro !== 'Admin') {  // ✅ FIXED: Changed from role to vaiTro
             alert("Bạn không có quyền truy cập báo cáo doanh thu!");
             navigate('/');
         }
-    }, [user.role, navigate]);
+    }, [user.vaiTro, navigate]);
 
     // Fetch báo cáo doanh thu
     useEffect(() => {
         const fetchRevenueReport = async () => {
             try {
                 setLoading(true);
-                const response = await axiosClient.get('/admin/revenue-report');
+                // ✅ FIXED: Using correct endpoint
+                const response = await axiosClient.get('/admin/revenue');
                 setData(response.data.meta || []);
                 setError(null);
             } catch (err) {
@@ -48,15 +55,50 @@ const RevenueReportPage = () => {
             }
         };
 
-        if (user.role === 'Admin') {
+        if (user.vaiTro === 'Admin') {  // ✅ FIXED: Changed from role to vaiTro
             fetchRevenueReport();
         }
-    }, [user.role]);
+    }, [user.vaiTro]);
 
-    // Tính toán thống kê
-    const totalRevenue = data.reduce((sum, item) => sum + (item.TongDoanhThu || 0), 0);
-    const totalTickets = data.reduce((sum, item) => sum + (item.SoVeDaBan || 0), 0);
-    const avgRevenue = data.length > 0 ? Math.round(totalRevenue / data.length) : 0;
+    // ✅ ADDED: Filter and Sort function
+    const getFilteredAndSortedData = () => {
+        let filtered = data.filter(item => {
+            const revenue = item.TongDoanhThu || 0;
+            return revenue >= filterMinRevenue && revenue <= filterMaxRevenue;
+        });
+
+        // Sort
+        const sorted = [...filtered].sort((a, b) => {
+            let aVal, bVal;
+            
+            if (sortBy === 'revenue') {
+                aVal = a.TongDoanhThu || 0;
+                bVal = b.TongDoanhThu || 0;
+            } else if (sortBy === 'tickets') {
+                aVal = a.SoVeDaBan || 0;
+                bVal = b.SoVeDaBan || 0;
+            } else if (sortBy === 'name') {
+                aVal = (a.TenPhim || '').toLowerCase();
+                bVal = (b.TenPhim || '').toLowerCase();
+                return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+            }
+            
+            if (sortOrder === 'asc') {
+                return aVal - bVal;
+            } else {
+                return bVal - aVal;
+            }
+        });
+
+        return sorted;
+    };
+
+    const processedData = getFilteredAndSortedData();
+
+    // Tính toán thống kê (từ dữ liệu đã filter)
+    const totalRevenue = processedData.reduce((sum, item) => sum + (item.TongDoanhThu || 0), 0);
+    const totalTickets = processedData.reduce((sum, item) => sum + (item.SoVeDaBan || 0), 0);
+    const avgRevenue = processedData.length > 0 ? Math.round(totalRevenue / processedData.length) : 0;
 
     // Màu sắc cho biểu đồ
     const COLORS = ['#00E5FF', '#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'];
@@ -82,6 +124,74 @@ const RevenueReportPage = () => {
                     </h1>
                     <p className="text-gray-400 text-sm ml-4">
                     </p>
+                </div>
+
+                {/* Filter & Sort Controls */}
+                <div className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg mb-8">
+                    <h3 className="text-lg font-bold text-white mb-4">🔍 Bộ Lọc & Sắp Xếp</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        {/* Sort By */}
+                        <div>
+                            <label className="block text-xs text-gray-400 uppercase mb-2 font-semibold">Sắp Xếp Theo</label>
+                            <select
+                                value={sortBy}
+                                onChange={(e) => setSortBy(e.target.value)}
+                                className="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded-lg focus:border-[#00E5FF] outline-none transition"
+                            >
+                                <option value="revenue">💰 Doanh Thu</option>
+                                <option value="tickets">🎫 Số Vé</option>
+                                <option value="name">🎬 Tên Phim</option>
+                            </select>
+                        </div>
+
+                        {/* Sort Order */}
+                        <div>
+                            <label className="block text-xs text-gray-400 uppercase mb-2 font-semibold">Thứ Tự</label>
+                            <select
+                                value={sortOrder}
+                                onChange={(e) => setSortOrder(e.target.value)}
+                                className="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded-lg focus:border-[#00E5FF] outline-none transition"
+                            >
+                                <option value="desc">📉 Giảm Dần (Cao → Thấp)</option>
+                                <option value="asc">📈 Tăng Dần (Thấp → Cao)</option>
+                            </select>
+                        </div>
+
+                        {/* Min Revenue */}
+                        <div>
+                            <label className="block text-xs text-gray-400 uppercase mb-2 font-semibold">Doanh Thu Min (Triệu)</label>
+                            <input
+                                type="number"
+                                value={filterMinRevenue / 1000000}
+                                onChange={(e) => setFilterMinRevenue(parseInt(e.target.value) * 1000000 || 0)}
+                                className="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded-lg focus:border-[#00E5FF] outline-none transition"
+                                placeholder="0"
+                            />
+                        </div>
+
+                        {/* Max Revenue */}
+                        <div>
+                            <label className="block text-xs text-gray-400 uppercase mb-2 font-semibold">Doanh Thu Max (Triệu)</label>
+                            <input
+                                type="number"
+                                value={filterMaxRevenue / 1000000}
+                                onChange={(e) => setFilterMaxRevenue(parseInt(e.target.value) * 1000000 || 999999999)}
+                                className="w-full p-2 bg-gray-800 text-white border border-gray-700 rounded-lg focus:border-[#00E5FF] outline-none transition"
+                                placeholder="999999"
+                            />
+                        </div>
+                    </div>
+                    
+                    {/* Filter Info */}
+                    <div className="mt-4 p-3 bg-gray-900/50 rounded-lg border border-gray-700">
+                        <p className="text-sm text-gray-300">
+                            📊 Hiển thị <span className="font-bold text-[#00E5FF]">{processedData.length}</span> trên <span className="font-bold">{data.length}</span> phim
+                            {filterMinRevenue > 0 || filterMaxRevenue < 999999999 ? 
+                                ` (Lọc: ${(filterMinRevenue/1000000).toFixed(0)} - ${(filterMaxRevenue/1000000).toFixed(0)} triệu)` 
+                                : ''
+                            }
+                        </p>
+                    </div>
                 </div>
 
                 {/* Error Message */}
@@ -121,9 +231,9 @@ const RevenueReportPage = () => {
                 {/* Biểu đồ Cột - Doanh thu theo phim */}
                 <div className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg mb-8">
                     <h2 className="text-xl font-bold text-white mb-4">💰 Doanh Thu Theo Phim</h2>
-                    {data.length > 0 ? (
+                    {processedData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={400}>
-                            <BarChart data={data}>
+                            <BarChart data={processedData}>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                                 <XAxis 
                                     dataKey="TenPhim" 
@@ -151,11 +261,11 @@ const RevenueReportPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                     <div className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
                         <h2 className="text-xl font-bold text-white mb-4">🥧 Tỷ Lệ Doanh Thu Các Phim</h2>
-                        {data.length > 0 ? (
+                        {processedData.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
                                 <PieChart>
                                     <Pie
-                                        data={data}
+                                        data={processedData}
                                         cx="50%"
                                         cy="50%"
                                         labelLine={false}
@@ -165,7 +275,7 @@ const RevenueReportPage = () => {
                                         dataKey="TongDoanhThu"
                                         style={{ fontFamily: 'Tahoma, Arial, sans-serif', fontSize: '12px' }}
                                     >
-                                        {data.map((entry, index) => (
+                                        {processedData.map((entry, index) => (
                                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                         ))}
                                     </Pie>
@@ -189,9 +299,9 @@ const RevenueReportPage = () => {
                     {/* Biểu đồ Cột - Số vé bán */}
                     <div className="bg-[#1a1a1a] rounded-xl p-6 border border-gray-800 shadow-lg">
                         <h2 className="text-xl font-bold text-white mb-4">🎫 Số Vé Đã Bán Theo Phim</h2>
-                        {data.length > 0 ? (
+                        {processedData.length > 0 ? (
                             <ResponsiveContainer width="100%" height={300}>
-                                <BarChart data={data}>
+                                <BarChart data={processedData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                                     <XAxis 
                                         dataKey="TenPhim" 
@@ -229,7 +339,7 @@ const RevenueReportPage = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800">
-                                {data && data.map((item, idx) => {
+                                {processedData && processedData.map((item, idx) => {
                                     const soVe = item?.SoVeDaBan ?? 0;
                                     const doanhThu = item?.TongDoanhThu ?? 0;
                                     const avgPrice = soVe > 0 ? Math.round(doanhThu / soVe) : 0;

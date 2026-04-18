@@ -164,7 +164,7 @@ const PaymentPage = () => {
             <div className="flex flex-col gap-3 mt-8">
                 <button 
                     onClick={handlePayment}
-                    className="w-full bg-green-600 py-3 rounded font-bold text-xl hover:bg-green-700 text-white transition"
+                    className="w-full bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] py-3 rounded font-bold text-xl text-black transition transform hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30"
                 >
                     THANH TOÁN NGAY
                 </button>

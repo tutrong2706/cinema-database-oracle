@@ -68,7 +68,7 @@ ORDER BY SoSuatChieu DESC, NgayChieuCuoi DESC;
 -- ============================================================================
 CREATE OR REPLACE VIEW V_DOANH_THU_BY_DATE AS
 SELECT 
-    TO_CHAR(ve.ThoiGianThanhToan, 'YYYY-MM-DD') AS Ngay,
+    TO_CHAR(ve.NgayDat, 'YYYY-MM-DD') AS Ngay,
     COUNT(DISTINCT ve.MaVe) AS SoVeBan,
     ROUND(SUM(ve.GiaVeCuoi), 2) AS DoanhThuVe,
     COUNT(DISTINCT dh.MaDonHang) AS SoHoaDon,
@@ -81,13 +81,13 @@ FROM VE_XEM_PHIM ve
 LEFT JOIN DON_HANG dh ON ve.MaDonHang = dh.MaDonHang
 LEFT JOIN GOM g ON dh.MaDonHang = g.MaDonHang
 WHERE ve.TrangThai IN ('Đã thanh toán', 'Đã xem')
-GROUP BY TO_CHAR(ve.ThoiGianThanhToan, 'YYYY-MM-DD')
+GROUP BY TO_CHAR(ve.NgayDat, 'YYYY-MM-DD')
 ORDER BY Ngay DESC;
 /
 
 CREATE OR REPLACE VIEW V_DOANH_THU_BY_VOLUME AS
 SELECT 
-    TO_CHAR(ve.ThoiGianThanhToan, 'YYYY-MM') AS Thang,
+    TO_CHAR(ve.NgayDat, 'YYYY-MM') AS Thang,
     COUNT(DISTINCT ve.MaVe) AS SoVeBan,
     ROUND(SUM(ve.GiaVeCuoi), 2) AS DoanhThuVe,
     COUNT(DISTINCT dh.MaDonHang) AS SoHoaDon,
@@ -97,7 +97,7 @@ FROM VE_XEM_PHIM ve
 LEFT JOIN DON_HANG dh ON ve.MaDonHang = dh.MaDonHang
 LEFT JOIN GOM g ON dh.MaDonHang = g.MaDonHang
 WHERE ve.TrangThai IN ('Đã thanh toán', 'Đã xem')
-GROUP BY TO_CHAR(ve.ThoiGianThanhToan, 'YYYY-MM')
+GROUP BY TO_CHAR(ve.NgayDat, 'YYYY-MM')
 ORDER BY TongDoanhThu DESC;
 /
 
@@ -114,11 +114,13 @@ SELECT
     s.GioKetThuc,
     s.GioBatDau || '-' || s.GioKetThuc AS ThoiGianChieu,
     pc.MaPhong,
-    pc.TenPhong,
+    pc.Ten AS TenPhong,
     pc.SucChua,
-    (SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong AND TrangThai = 'Trống') AS GheTrong,
-    (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
-     AND TrangThai IN ('Đã thanh toán', 'Đã xem')) AS GheDaBan,
+    (SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong) - 
+    COALESCE((SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
+     AND TrangThai IN ('Đã thanh toán', 'Đã xem')), 0) AS GheTrong,
+    COALESCE((SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
+     AND TrangThai IN ('Đã thanh toán', 'Đã xem')), 0) AS GheDaBan,
     s.GiaVeCoBan,
     s.TrangThai
 FROM SUAT_CHIEU s
@@ -135,12 +137,16 @@ SELECT
     p.TenPhim,
     s.NgayChieu,
     s.GioBatDau || '-' || s.GioKetThuc AS ThoiGianChieu,
-    pc.TenPhong,
+    pc.Ten AS TenPhong,
     pc.SucChua,
-    (SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong AND TrangThai = 'Trống') AS GheTrong,
-    (SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
-     AND TrangThai IN ('Đã thanh toán', 'Đã xem')) AS GheDaBan,
-    ROUND((SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong AND TrangThai = 'Trống') * 100.0 / pc.SucChua, 2) AS PhanTramTrong,
+    (SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong) - 
+    COALESCE((SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
+     AND TrangThai IN ('Đã thanh toán', 'Đã xem')), 0) AS GheTrong,
+    COALESCE((SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
+     AND TrangThai IN ('Đã thanh toán', 'Đã xem')), 0) AS GheDaBan,
+    ROUND(((SELECT COUNT(*) FROM GHE WHERE MaPhong = pc.MaPhong) - 
+    COALESCE((SELECT COUNT(*) FROM VE_XEM_PHIM WHERE MaSuatChieu = s.MaSuatChieu 
+     AND TrangThai IN ('Đã thanh toán', 'Đã xem')), 0)) * 100.0 / pc.SucChua, 2) AS PhanTramTrong,
     s.GiaVeCoBan,
     s.TrangThai
 FROM SUAT_CHIEU s
@@ -198,167 +204,17 @@ ORDER BY SoLanMua DESC, LanMuaCuoi DESC;
 /
 
 -- ============================================================================
--- ENHANCED PROCEDURE 1: Get movies with flexible sorting
+-- NOTE: Procedures with flexible CASE logic cannot use direct SELECT
+-- Instead, implement sorting logic in application layer (Node.js/Backend)
+-- The above Views provide all necessary sorted result sets
 -- ============================================================================
-CREATE OR REPLACE PROCEDURE SP_GetMoviesSorted (
-    p_SortBy IN VARCHAR2 DEFAULT 'RELEASE_DATE',
-    p_Limit IN NUMBER DEFAULT 10
-)
-AS
-BEGIN
-    CASE p_SortBy
-        WHEN 'RELEASE_DATE' THEN
-            SELECT * FROM (SELECT * FROM V_PHIM_SORTED ORDER BY NgayKhoiChieu DESC)
-            WHERE ROWNUM <= p_Limit;
-        WHEN 'RATING' THEN
-            SELECT * FROM (SELECT * FROM V_PHIM_SORTED ORDER BY DiemTrungBinh DESC, TongDanhGia DESC)
-            WHERE ROWNUM <= p_Limit;
-        WHEN 'REVENUE' THEN
-            SELECT * FROM (SELECT * FROM V_PHIM_SORTED ORDER BY TongDoanhThu DESC)
-            WHERE ROWNUM <= p_Limit;
-        WHEN 'POPULARITY' THEN
-            SELECT * FROM (SELECT * FROM V_PHIM_SORTED ORDER BY SoVeDaBan DESC, DiemTrungBinh DESC)
-            WHERE ROWNUM <= p_Limit;
-        WHEN 'SHOWTIMES' THEN
-            SELECT * FROM (SELECT * FROM V_PHIM_SORTED ORDER BY SoSuatChieu DESC, NgayChieuCuoi DESC)
-            WHERE ROWNUM <= p_Limit;
-        ELSE
-            -- Default to release date
-            SELECT * FROM (SELECT * FROM V_PHIM_SORTED ORDER BY NgayKhoiChieu DESC)
-            WHERE ROWNUM <= p_Limit;
-    END CASE;
-END SP_GetMoviesSorted;
-/
 
--- ============================================================================
--- ENHANCED PROCEDURE 2: Get revenue report with flexible sorting
--- ============================================================================
-CREATE OR REPLACE PROCEDURE SP_GetRevenueReport (
-    p_SortBy IN VARCHAR2 DEFAULT 'DATE',
-    p_NgayBatDau IN DATE DEFAULT NULL,
-    p_NgayKetThuc IN DATE DEFAULT NULL
-)
-AS
 BEGIN
-    IF p_NgayBatDau IS NULL THEN
-        p_NgayBatDau := TRUNC(SYSDATE) - 30;
-    END IF;
-    
-    IF p_NgayKetThuc IS NULL THEN
-        p_NgayKetThuc := TRUNC(SYSDATE);
-    END IF;
-    
-    CASE p_SortBy
-        WHEN 'DATE' THEN
-            SELECT * FROM V_DOANH_THU_BY_DATE
-            WHERE TO_DATE(Ngay, 'YYYY-MM-DD') BETWEEN p_NgayBatDau AND p_NgayKetThuc
-            ORDER BY Ngay DESC;
-        WHEN 'VOLUME' THEN
-            SELECT * FROM V_DOANH_THU_BY_VOLUME
-            WHERE TO_DATE(Thang || '-01', 'YYYY-MM-DD') BETWEEN p_NgayBatDau AND p_NgayKetThuc
-            ORDER BY TongDoanhThu DESC;
-        WHEN 'TICKETS' THEN
-            SELECT * FROM V_DOANH_THU_BY_DATE
-            WHERE TO_DATE(Ngay, 'YYYY-MM-DD') BETWEEN p_NgayBatDau AND p_NgayKetThuc
-            ORDER BY SoVeBan DESC, TongDoanhThu DESC;
-        ELSE
-            SELECT * FROM V_DOANH_THU_BY_DATE
-            WHERE TO_DATE(Ngay, 'YYYY-MM-DD') BETWEEN p_NgayBatDau AND p_NgayKetThuc
-            ORDER BY Ngay DESC;
-    END CASE;
-END SP_GetRevenueReport;
-/
-
--- ============================================================================
--- ENHANCED PROCEDURE 3: Get showtimes with flexible sorting
--- ============================================================================
-CREATE OR REPLACE PROCEDURE SP_GetShowtimesSorted (
-    p_MaPhim IN VARCHAR2,
-    p_SortBy IN VARCHAR2 DEFAULT 'TIME'
-)
-AS
-BEGIN
-    CASE p_SortBy
-        WHEN 'TIME' THEN
-            SELECT * FROM V_SUAT_CHIEU_BY_TIME
-            WHERE MaPhim = p_MaPhim
-            ORDER BY NgayChieu ASC, GioBatDau ASC;
-        WHEN 'AVAILABILITY' THEN
-            SELECT * FROM V_SUAT_CHIEU_BY_AVAILABILITY
-            WHERE MaPhim = p_MaPhim
-            ORDER BY PhanTramTrong DESC, NgayChieu ASC;
-        WHEN 'PRICE' THEN
-            SELECT * FROM V_SUAT_CHIEU_BY_TIME
-            WHERE MaPhim = p_MaPhim
-            ORDER BY GiaVeCoBan ASC, NgayChieu ASC;
-        ELSE
-            SELECT * FROM V_SUAT_CHIEU_BY_TIME
-            WHERE MaPhim = p_MaPhim
-            ORDER BY NgayChieu ASC, GioBatDau ASC;
-    END CASE;
-END SP_GetShowtimesSorted;
-/
-
--- ============================================================================
--- ENHANCED PROCEDURE 4: Get customers with flexible sorting
--- ============================================================================
-CREATE OR REPLACE PROCEDURE SP_GetCustomersSorted (
-    p_SortBy IN VARCHAR2 DEFAULT 'SPENDING',
-    p_Limit IN NUMBER DEFAULT 50
-)
-AS
-BEGIN
-    CASE p_SortBy
-        WHEN 'SPENDING' THEN
-            SELECT * FROM (SELECT * FROM V_KHACH_HANG_BY_SPENDING ORDER BY TongChiTieu DESC)
-            WHERE ROWNUM <= p_Limit;
-        WHEN 'FREQUENCY' THEN
-            SELECT * FROM (SELECT * FROM V_KHACH_HANG_BY_FREQUENCY ORDER BY SoLanMua DESC, LanMuaCuoi DESC)
-            WHERE ROWNUM <= p_Limit;
-        WHEN 'LOYALTY' THEN
-            SELECT * FROM (SELECT * FROM V_KHACH_HANG_BY_SPENDING ORDER BY SoLanMua DESC, DiemTichLuy DESC)
-            WHERE ROWNUM <= p_Limit;
-        ELSE
-            SELECT * FROM (SELECT * FROM V_KHACH_HANG_BY_SPENDING ORDER BY TongChiTieu DESC)
-            WHERE ROWNUM <= p_Limit;
-    END CASE;
-END SP_GetCustomersSorted;
-/
-
--- ============================================================================
--- HELPER PROCEDURE: List available sort options
--- ============================================================================
-CREATE OR REPLACE PROCEDURE SP_GetSortOptions
-AS
-BEGIN
-    DBMS_OUTPUT.PUT_LINE('');
-    DBMS_OUTPUT.PUT_LINE('=== AVAILABLE SORTING OPTIONS ===');
-    DBMS_OUTPUT.PUT_LINE('');
-    
-    DBMS_OUTPUT.PUT_LINE('MOVIES (SP_GetMoviesSorted):');
-    DBMS_OUTPUT.PUT_LINE('  - RELEASE_DATE: Sort by newest release');
-    DBMS_OUTPUT.PUT_LINE('  - RATING: Sort by average rating');
-    DBMS_OUTPUT.PUT_LINE('  - REVENUE: Sort by total revenue');
-    DBMS_OUTPUT.PUT_LINE('  - POPULARITY: Sort by tickets sold + rating');
-    DBMS_OUTPUT.PUT_LINE('  - SHOWTIMES: Sort by number of showtimes');
-    DBMS_OUTPUT.PUT_LINE('');
-    
-    DBMS_OUTPUT.PUT_LINE('REVENUE REPORT (SP_GetRevenueReport):');
-    DBMS_OUTPUT.PUT_LINE('  - DATE: Sort by date (newest first)');
-    DBMS_OUTPUT.PUT_LINE('  - VOLUME: Sort by total revenue amount');
-    DBMS_OUTPUT.PUT_LINE('  - TICKETS: Sort by number of tickets sold');
-    DBMS_OUTPUT.PUT_LINE('');
-    
-    DBMS_OUTPUT.PUT_LINE('SHOWTIMES (SP_GetShowtimesSorted):');
-    DBMS_OUTPUT.PUT_LINE('  - TIME: Sort by date and time');
-    DBMS_OUTPUT.PUT_LINE('  - AVAILABILITY: Sort by available seats %');
-    DBMS_OUTPUT.PUT_LINE('  - PRICE: Sort by price (lowest first)');
-    DBMS_OUTPUT.PUT_LINE('');
-    
-    DBMS_OUTPUT.PUT_LINE('CUSTOMERS (SP_GetCustomersSorted):');
-    DBMS_OUTPUT.PUT_LINE('  - SPENDING: Sort by total spending');
-    DBMS_OUTPUT.PUT_LINE('  - FREQUENCY: Sort by booking frequency');
-    DBMS_OUTPUT.PUT_LINE('  - LOYALTY: Sort by loyalty (frequency + points)');
-    DBMS_OUTPUT.PUT_LINE('');
-END SP_GetSortOptions;
+    DBMS_OUTPUT.PUT_LINE('Enhanced views created successfully!');
+    DBMS_OUTPUT.PUT_LINE('Use these views from application layer:');
+    DBMS_OUTPUT.PUT_LINE('  - V_PHIM_BY_RELEASE_DATE, V_PHIM_BY_RATING, V_PHIM_BY_REVENUE');
+    DBMS_OUTPUT.PUT_LINE('  - V_DOANH_THU_BY_DATE, V_DOANH_THU_BY_VOLUME');
+    DBMS_OUTPUT.PUT_LINE('  - V_SUAT_CHIEU_BY_TIME, V_SUAT_CHIEU_BY_AVAILABILITY');
+    DBMS_OUTPUT.PUT_LINE('  - V_KHACH_HANG_BY_SPENDING, V_KHACH_HANG_BY_FREQUENCY');
+END;
 /

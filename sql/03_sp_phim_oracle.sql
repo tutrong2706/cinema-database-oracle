@@ -1,6 +1,6 @@
 -- ORACLE VERSION: Stored Procedures for PHIM (Movie) Management
 -- ============================================================================
-
+set echo on;
 -- 1. INSERT NEW MOVIE
 CREATE OR REPLACE PROCEDURE SP_Insert_PHIM (
     p_MaPhim      IN PHIM.MaPhim%TYPE,
@@ -16,9 +16,11 @@ CREATE OR REPLACE PROCEDURE SP_Insert_PHIM (
     p_ChuDePhim   IN PHIM.ChuDePhim%TYPE
 )
 AS
+    v_count NUMBER;
 BEGIN
     -- Check if movie code already exists
-    IF (SELECT COUNT(*) FROM PHIM WHERE MaPhim = p_MaPhim) > 0 THEN
+    SELECT COUNT(*) INTO v_count FROM PHIM WHERE MaPhim = p_MaPhim;
+    IF v_count > 0 THEN
         RAISE_APPLICATION_ERROR(-20001, 'Lỗi: Mã Phim đã tồn tại. Vui lòng chọn mã khác.');
     END IF;
 
@@ -61,9 +63,11 @@ CREATE OR REPLACE PROCEDURE SP_Update_PHIM (
     p_ChuDePhim_New   IN PHIM.ChuDePhim%TYPE
 )
 AS
+    v_count NUMBER;
 BEGIN
     -- Check if movie exists
-    IF (SELECT COUNT(*) FROM PHIM WHERE MaPhim = p_MaPhim) = 0 THEN
+    SELECT COUNT(*) INTO v_count FROM PHIM WHERE MaPhim = p_MaPhim;
+    IF v_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20005, 'Lỗi: Không tìm thấy Mã Phim cần cập nhật.');
     END IF;
 
@@ -105,14 +109,17 @@ CREATE OR REPLACE PROCEDURE SP_Delete_PHIM (
     p_MaPhim IN PHIM.MaPhim%TYPE
 )
 AS
+    v_count NUMBER;
 BEGIN
     -- Check if movie exists
-    IF (SELECT COUNT(*) FROM PHIM WHERE MaPhim = p_MaPhim) = 0 THEN
+    SELECT COUNT(*) INTO v_count FROM PHIM WHERE MaPhim = p_MaPhim;
+    IF v_count = 0 THEN
         RAISE_APPLICATION_ERROR(-20005, 'Lỗi: Không tìm thấy Mã Phim cần xóa.');
     END IF;
 
     -- Check for active screening schedules
-    IF (SELECT COUNT(*) FROM SUAT_CHIEU WHERE MaPhim = p_MaPhim AND TrangThai <> 'Hủy') > 0 THEN
+    SELECT COUNT(*) INTO v_count FROM SUAT_CHIEU WHERE MaPhim = p_MaPhim AND TrangThai <> 'Hủy';
+    IF v_count > 0 THEN
         RAISE_APPLICATION_ERROR(-20006, 'Lỗi: Không thể xóa phim có suất chiếu đang hoạt động.');
     END IF;
 
@@ -123,28 +130,35 @@ END SP_Delete_PHIM;
 
 -- 4. GET MOVIE BY CODE
 CREATE OR REPLACE PROCEDURE SP_Get_PHIM_ByCode (
-    p_MaPhim IN PHIM.MaPhim%TYPE
+    p_MaPhim IN PHIM.MaPhim%TYPE,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM PHIM WHERE MaPhim = p_MaPhim;
 END SP_Get_PHIM_ByCode;
 /
 
 -- 5. GET ALL MOVIES
-CREATE OR REPLACE PROCEDURE SP_Get_All_PHIM
+CREATE OR REPLACE PROCEDURE SP_Get_All_PHIM (
+    p_cursor OUT SYS_REFCURSOR
+)
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM PHIM ORDER BY NgayKhoiChieu DESC;
 END SP_Get_All_PHIM;
 /
 
 -- 6. SEARCH MOVIES BY NAME OR GENRE
 CREATE OR REPLACE PROCEDURE SP_Search_PHIM (
-    p_KeyWord IN VARCHAR2
+    p_KeyWord IN VARCHAR2,
+    p_cursor OUT SYS_REFCURSOR
 )
 AS
 BEGIN
+    OPEN p_cursor FOR
     SELECT * FROM PHIM 
     WHERE LOWER(TenPhim) LIKE LOWER('%' || p_KeyWord || '%') 
        OR LOWER(ChuDePhim) LIKE LOWER('%' || p_KeyWord || '%')

@@ -55,20 +55,20 @@ CREATE OR REPLACE FUNCTION FUNC_TinhGiaVeVoiKhuyenMai(
 RETURN NUMBER
 DETERMINISTIC
 IS
-    v_PhanTramGiam  KHUYẾN_MÃI.PhanTramGiam%TYPE;
+    v_MucGiam       CHUONG_TRINH_KHUYEN_MAI.MucGiam%TYPE;
     v_GiaCuoi       NUMBER;
 BEGIN
-    -- Get discount percentage
-    SELECT NVL(PhanTramGiam, 0) 
-    INTO v_PhanTramGiam
-    FROM KHUYẾN_MÃI 
+    -- Get discount amount
+    SELECT NVL(MucGiam, 0) 
+    INTO v_MucGiam
+    FROM CHUONG_TRINH_KHUYEN_MAI 
     WHERE MaKhuyenMai = p_MaKhuyenMai 
     AND TRUNC(SYSDATE) BETWEEN NgayBatDau AND NgayKetThuc;
 
-    -- Calculate final price
-    v_GiaCuoi := p_GiaGoc * (1 - v_PhanTramGiam / 100);
+    -- Calculate final price (MucGiam is absolute discount amount, not percentage)
+    v_GiaCuoi := p_GiaGoc - v_MucGiam;
     
-    RETURN v_GiaCuoi;
+    RETURN GREATEST(v_GiaCuoi, 0);
 END FUNC_TinhGiaVeVoiKhuyenMai;
 /
 
@@ -86,14 +86,14 @@ BEGIN
     INTO v_TongVe
     FROM VE_XEM_PHIM v
     JOIN SUAT_CHIEU s ON v.MaSuatChieu = s.MaSuatChieu
-    WHERE s.MaPhim = p_MaPhim AND v.TrangThai IN ('Đã thanh toán', 'Đã xem');
+    WHERE s.MaPhim = p_MaPhim AND v.TrangThai = 'Đã thanh toán';
 
     -- Get total revenue
-    SELECT NVL(SUM(v.GiaVe), 0)
+    SELECT NVL(SUM(v.GiaVeCuoi), 0)
     INTO v_DoanhThu
     FROM VE_XEM_PHIM v
     JOIN SUAT_CHIEU s ON v.MaSuatChieu = s.MaSuatChieu
-    WHERE s.MaPhim = p_MaPhim AND v.TrangThai IN ('Đã thanh toán', 'Đã xem');
+    WHERE s.MaPhim = p_MaPhim AND v.TrangThai = 'Đã thanh toán';
 
     -- Calculate popularity score (weighted)
     v_DiemPhoBien := (v_TongVe * 0.4) + (v_DoanhThu * 0.6) / 100;
@@ -108,19 +108,23 @@ RETURN NUMBER
 DETERMINISTIC
 IS
     v_TongTien NUMBER := 0;
+    v_TongGom NUMBER := 0;
+    v_TongVe NUMBER := 0;
 BEGIN
     -- Calculate from GOM (snacks/drinks)
     SELECT NVL(SUM(SoLuong * DonGia), 0)
-    INTO v_TongTien
+    INTO v_TongGom
     FROM GOM
     WHERE MaDonHang = p_MaDonHang;
     
     -- Add from VE_XEM_PHIM (tickets)
-    SELECT v_TongTien + NVL(SUM(GiaVe), 0)
-    INTO v_TongTien
+    SELECT NVL(SUM(GiaVeCuoi), 0)
+    INTO v_TongVe
     FROM VE_XEM_PHIM
-    WHERE MaDonHang = p_MaDonHang AND TrangThai IN ('Đã thanh toán', 'Đã xem');
+    WHERE MaDonHang = p_MaDonHang AND TrangThai IN ('Đã thanh toán', 'Hủy');
 
+    v_TongTien := v_TongGom + v_TongVe;
+    
     RETURN v_TongTien;
 END FUNC_TinhTongTienDonHang;
 /
@@ -149,12 +153,22 @@ RETURN NUMBER
 DETERMINISTIC
 IS
     v_SoGheTrong NUMBER;
+    v_MaPhong VARCHAR2(20);
+    v_TongGhe NUMBER;
+    v_GheDaDat NUMBER;
 BEGIN
-    SELECT COUNT(*)
-    INTO v_SoGheTrong
-    FROM GHE
-    WHERE MaPhong = (SELECT MaPhong FROM SUAT_CHIEU WHERE MaSuatChieu = p_MaSuatChieu)
-    AND TrangThai IN ('Trống', 'Có thể đặt');
+    -- Get room from showtimes
+    SELECT MaPhong INTO v_MaPhong FROM SUAT_CHIEU WHERE MaSuatChieu = p_MaSuatChieu;
+    
+    -- Count total seats in room
+    SELECT COUNT(*) INTO v_TongGhe FROM GHE WHERE MaPhong = v_MaPhong;
+    
+    -- Count booked seats
+    SELECT COUNT(*) INTO v_GheDaDat FROM VE_XEM_PHIM
+    WHERE MaSuatChieu = p_MaSuatChieu AND TrangThai IN ('Đã đặt', 'Đã thanh toán');
+    
+    -- Available = Total - Booked
+    v_SoGheTrong := v_TongGhe - v_GheDaDat;
 
     RETURN NVL(v_SoGheTrong, 0);
 END FUNC_SoGheTrong;

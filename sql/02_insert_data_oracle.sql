@@ -1,14 +1,38 @@
 -- ============================================================================
 -- INSERT DATA - ORACLE SYNTAX
 -- ============================================================================
-
--- Disable constraints temporarily for data loading
+SET ECHO OFF;          -- Không nhắc lại câu lệnh đang chạy
+SET FEEDBACK OFF;      -- Không hiện thông báo "1 row created" hoặc "Table created"
+SET TERMOUT ON;        -- Vẫn hiện kết quả ra màn hình
+SET VERIFY OFF;        -- Không hiện chi tiết thay đổi biến &
+SET SERVEROUTPUT ON;   -- Bật để hiện thông báo từ DBMS_OUTPUT
+-- Tắt kiểm tra khóa ngoại (Disable Constraints)
+ALTER TABLE GHE DISABLE CONSTRAINT fk_ghe_phong;
+ALTER TABLE THE_LOAI_PHIM DISABLE CONSTRAINT fk_theloai_phim;
+ALTER TABLE KHACH_HANG DISABLE CONSTRAINT fk_kh_tk;
+ALTER TABLE QUAN_TRI_VIEN DISABLE CONSTRAINT fk_qtv_tk;
+ALTER TABLE CA_LAM_VIEC DISABLE CONSTRAINT fk_ca_qtv;
+ALTER TABLE DON_HANG DISABLE CONSTRAINT fk_dh_kh;
+ALTER TABLE GOM DISABLE CONSTRAINT fk_gom_dh;
+ALTER TABLE GOM DISABLE CONSTRAINT fk_gom_mh;
+ALTER TABLE THANH_TOAN DISABLE CONSTRAINT fk_tt_dh;
+ALTER TABLE TRINH_CHIEU DISABLE CONSTRAINT fk_tc_rap;
+ALTER TABLE TRINH_CHIEU DISABLE CONSTRAINT fk_tc_phim;
+ALTER TABLE SUAT_CHIEU DISABLE CONSTRAINT fk_sc_phim;
+ALTER TABLE SUAT_CHIEU DISABLE CONSTRAINT fk_sc_phong;
 ALTER TABLE VE_XEM_PHIM DISABLE CONSTRAINT fk_ve_sc;
 ALTER TABLE VE_XEM_PHIM DISABLE CONSTRAINT fk_ve_ghe;
 ALTER TABLE VE_XEM_PHIM DISABLE CONSTRAINT fk_ve_kh;
 ALTER TABLE VE_XEM_PHIM DISABLE CONSTRAINT fk_ve_dh;
 ALTER TABLE AP_DUNG DISABLE CONSTRAINT fk_ad_ve;
 ALTER TABLE AP_DUNG DISABLE CONSTRAINT fk_ad_km;
+ALTER TABLE DANH_GIA DISABLE CONSTRAINT fk_dg_kh;
+ALTER TABLE DANH_GIA DISABLE CONSTRAINT fk_dg_phim;
+ALTER TABLE QUAN_LY DISABLE CONSTRAINT fk_ql_qtv;
+ALTER TABLE QUAN_LY DISABLE CONSTRAINT fk_ql_rap;
+
+-- Đảm bảo không bị dừng ở ký tự &
+SET DEFINE OFF;
 
 -- ========== 1. TÀI KHOẢN - KHÁCH HÀNG - QUẢN TRỊ VIÊN ==========
 INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
@@ -140,22 +164,22 @@ INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'E', 2, 'Thư
 COMMIT;
 
 -- ========== PHIM – THỂ LOẠI – KHUYẾN MÃI ==========
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH001', 'Avengers: Endgame', 180, 'English', 'USA', 'Anthony Russo', 'Robert Downey Jr.', TO_DATE('2019-04-26', 'YYYY-MM-DD'), 'Siêu anh hùng Marvel', 13, 'Siêu anh hùng');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH002', 'Nhà Bà Nữ', 120, 'Tiếng Việt', 'Việt Nam', 'Tristian', 'Lê Giang', TO_DATE('2023-01-22', 'YYYY-MM-DD'), 'Hài gia đình', 13, 'Gia đình');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH003', 'Fast & Furious 9', 145, 'English', 'USA', 'Justin Lin', 'Vin Diesel', TO_DATE('2021-05-19', 'YYYY-MM-DD'), 'Hành động đua xe', 16, 'Hành động');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH004', 'Conan Movie 26', 110, 'Japanese', 'Japan', 'Yuzuru Tachikawa', 'Minami Takayama', TO_DATE('2023-04-14', 'YYYY-MM-DD'), 'Thám tử lừng danh', 13, 'Hoạt hình');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH005', 'Spider-Man: No Way Home', 150, 'English', 'USA', 'Jon Watts', 'Tom Holland', TO_DATE('2021-12-17', 'YYYY-MM-DD'), 'Anh hùng Marvel', 13, 'Siêu anh hùng');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH006', 'Dune: Messiah', 160, 'English', 'USA', 'Denis Villeneuve', 'Chalamet', TO_DATE('2025-11-15', 'YYYY-MM-DD'), 'Khoa học viễn tưởng', 16, 'Viễn tưởng');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH007', 'Lật Mặt 7', 115, 'Tiếng Việt', 'Việt Nam', 'Lý Hải', 'Lý Hải', TO_DATE('2025-11-25', 'YYYY-MM-DD'), 'Hành động hài', 16, 'Hành động');
-INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim) VALUES
-('PH008', 'The Conjuring 3', 100, 'English', 'USA', 'Michael Chaves', 'Patrick Wilson', TO_DATE('2025-10-31', 'YYYY-MM-DD'), 'Ma ám kinh dị', 18, 'Kinh dị');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH001', 'Avengers: Endgame', 180, 'English', 'USA', 'Anthony Russo', 'Robert Downey Jr.', TO_DATE('2019-04-26', 'YYYY-MM-DD'), 'Siêu anh hùng Marvel quấp lại để cứu vũ trụ khỏi tay Thanos. Một cuộc chiến tối cùng giữa thiện và ác.', 13, 'Siêu anh hùng', 'https://image.tmdb.org/t/p/w500/ulzhLuWrPK07P1YkdWQLZnQh1JL.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH002', 'Nhà Bà Nữ', 120, 'Tiếng Việt', 'Việt Nam', 'Tristian', 'Lê Giang', TO_DATE('2023-01-22', 'YYYY-MM-DD'), 'Một bộ phim hài gia đình vui nhộn với những tình huống hài hước và ấm áp. Câu chuyện về gia đình và tình cảm.', 13, 'Gia đình', 'https://upload.wikimedia.org/wikipedia/vi/thumb/6/6f/%C3%81p_ph%C3%ADch_phim_Nh%C3%A0_b%C3%A0_N%E1%BB%AF.jpg/250px-%C3%81p_ph%C3%ADch_phim_Nh%C3%A0_b%C3%A0_N%E1%BB%AF.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH003', 'Fast & Furious 9', 145, 'English', 'USA', 'Justin Lin', 'Vin Diesel', TO_DATE('2021-05-19', 'YYYY-MM-DD'), 'Đội hình Fast & Furious quay trở lại với những cuộc đua xe tốc độ cao và những pha hành động kịch tính nhất. Tìm kiếm lao động bí ẩn.', 16, 'Hành động', 'https://image.tmdb.org/t/p/w500/deEmLILTPejEb6OGsXRJ5MCvyDW.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH004', 'Conan Movie 26', 110, 'Japanese', 'Japan', 'Yuzuru Tachikawa', 'Minami Takayama', TO_DATE('2023-04-14', 'YYYY-MM-DD'), 'Thám tử lừng danh Conan lại quay trở lại với một vụ án bí ẩn liên quan đến tàu ngầm đen. Một cuộc phiêu lưu kỳ thú chính ở biển.', 13, 'Hoạt hình', 'https://image.tmdb.org/t/p/w500/ksQ8uNgoWsVH6a0oPB6zx08pOwU.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH005', 'Spider-Man: No Way Home', 150, 'English', 'USA', 'Jon Watts', 'Tom Holland', TO_DATE('2021-12-17', 'YYYY-MM-DD'), 'Spider-Man phải đối mặt với những kẻ thù từ các vũ trụ khác nhau. Một cuộc chiến liên vũ trụ đầy kịch tính và bất ngờ.', 13, 'Siêu anh hùng', 'https://image.tmdb.org/t/p/w500/1g0dhYtq4irTY1GPXvft6k4YLjm.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH006', 'Dune: Messiah', 160, 'English', 'USA', 'Denis Villeneuve', 'Chalamet', TO_DATE('2025-11-15', 'YYYY-MM-DD'), 'Tiếp tục câu chuyện sử thi của Dune với những cảnh quay hoành tráng và các trận chiến mãn nhân tạo. Một tác phẩm khoa học viễn tưởng vĩ đại.', 16, 'Viễn tưởng', 'https://image.tmdb.org/t/p/w500/1pdfLvkbY9ohJlCjQH2CZjjYVvJ.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH007', 'Lật Mặt 7', 115, 'Tiếng Việt', 'Việt Nam', 'Lý Hải', 'Lý Hải', TO_DATE('2025-11-25', 'YYYY-MM-DD'), 'Phần 7 của series Lật Mặt mang đến những pha hành động hài hước và gay cấn. Một cuộc chiến với những twist không ngờ tới.', 16, 'Hành động', 'https://iguov8nhvyobj.vcdn.cloud/media/catalog/product/cache/1/image/c5f0a1eff4c394a251036189ccddaacd/l/a/lat-mat-7.jpg');
+INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh) VALUES
+('PH008', 'The Conjuring 3', 100, 'English', 'USA', 'Michael Chaves', 'Patrick Wilson', TO_DATE('2025-10-31', 'YYYY-MM-DD'), 'Những vụ án liên quan đến ma ám bí ẩn lại xuất hiện. Một bộ phim kinh dị đầy rợn người và bí ẩn.', 18, 'Kinh dị', 'https://image.tmdb.org/t/p/w500/rQfX2xx8TUoNvyk892yKWNikJaM.jpg');
 
 COMMIT;
 
@@ -318,12 +342,63 @@ INSERT INTO QUAN_LY (MaNguoiDung_QTV, MaRapPhim) VALUES ('AD003', 'RAP003');
 
 COMMIT;
 
--- Re-enable constraints
+-- Bật lại kiểm tra khóa ngoại (Enable Constraints)
+ALTER TABLE GHE ENABLE CONSTRAINT fk_ghe_phong;
+ALTER TABLE THE_LOAI_PHIM ENABLE CONSTRAINT fk_theloai_phim;
+ALTER TABLE KHACH_HANG ENABLE CONSTRAINT fk_kh_tk;
+ALTER TABLE QUAN_TRI_VIEN ENABLE CONSTRAINT fk_qtv_tk;
+-- ========== DANH GIA ==========
+-- Sample reviews from customers
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG001', 'KH001', 'PH001', 'Phim siêu hay, cái kết rất cảm động!', 10);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG002', 'KH002', 'PH001', 'Đã xem 2 lần rồi, vẫn hay lắm', 9);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG003', 'KH003', 'PH001', 'Bom tấn Marvel xứng đáng', 10);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG004', 'KH004', 'PH002', 'Hài thật, cười bụi xịt', 8);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG005', 'KH005', 'PH002', 'Phim Việt hay hiếm khi thấy', 9);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG006', 'KH006', 'PH003', 'Fast & Furious vẫn luôn tuyệt vời', 9);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG007', 'KH007', 'PH003', 'Action hay, nhạc hay, đáng xem', 9);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG008', 'KH008', 'PH004', 'Conan lại xuất sắc, điều tra hay', 10);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG009', 'KH009', 'PH005', 'Spider-Man siêu chất, đặc biệt có 3 nhân vật chính', 10);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG010', 'KH010', 'PH005', 'Marvel Fan sẽ yêu phim này', 10);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG011', 'KH011', 'PH006', 'Dune 2 tuyệt vời, sử thi điện ảnh', 10);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG012', 'KH012', 'PH006', 'Hình ảnh đẹp, kinh tế về lịch sử', 9);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG013', 'KH013', 'PH007', 'Lật Mặt 7 hay, hài và hành động mix vừa', 8);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG014', 'KH014', 'PH008', 'Phim kinh dị hay, sợ xanh mặt', 8);
+INSERT INTO DANH_GIA (MaDanhGia, MaNguoiDung, MaPhim, NoiDung, DiemSo) VALUES
+('DG015', 'KH015', 'PH008', 'Hãng Conjuring luôn đáng tin cậy', 9);
+
+COMMIT;
+
+ALTER TABLE CA_LAM_VIEC ENABLE CONSTRAINT fk_ca_qtv;
+ALTER TABLE DON_HANG ENABLE CONSTRAINT fk_dh_kh;
+ALTER TABLE GOM ENABLE CONSTRAINT fk_gom_dh;
+ALTER TABLE GOM ENABLE CONSTRAINT fk_gom_mh;
+ALTER TABLE THANH_TOAN ENABLE CONSTRAINT fk_tt_dh;
+ALTER TABLE TRINH_CHIEU ENABLE CONSTRAINT fk_tc_phim;
+ALTER TABLE SUAT_CHIEU ENABLE CONSTRAINT fk_sc_phim;
+ALTER TABLE SUAT_CHIEU ENABLE CONSTRAINT fk_sc_phong;
 ALTER TABLE VE_XEM_PHIM ENABLE CONSTRAINT fk_ve_sc;
 ALTER TABLE VE_XEM_PHIM ENABLE CONSTRAINT fk_ve_ghe;
 ALTER TABLE VE_XEM_PHIM ENABLE CONSTRAINT fk_ve_kh;
 ALTER TABLE VE_XEM_PHIM ENABLE CONSTRAINT fk_ve_dh;
 ALTER TABLE AP_DUNG ENABLE CONSTRAINT fk_ad_ve;
 ALTER TABLE AP_DUNG ENABLE CONSTRAINT fk_ad_km;
+ALTER TABLE DANH_GIA ENABLE CONSTRAINT fk_dg_kh;
+ALTER TABLE DANH_GIA ENABLE CONSTRAINT fk_dg_phim;
+ALTER TABLE QUAN_LY ENABLE CONSTRAINT fk_ql_qtv;
+
 
 COMMIT;

@@ -80,15 +80,15 @@ END TRG_VE_CheckThanhToan;
 /
 
 -- TRIGGER 4: Validate promotion date range
-CREATE OR REPLACE TRIGGER TRG_VE_CheckKhuyenMai
-BEFORE INSERT ON VE_XEM_PHIM
+CREATE OR REPLACE TRIGGER TRG_AP_DUNG_CheckKhuyenMai
+BEFORE INSERT ON AP_DUNG
 FOR EACH ROW
 DECLARE
     v_Count NUMBER;
 BEGIN
     IF :NEW.MaKhuyenMai IS NOT NULL THEN
         SELECT COUNT(*) INTO v_Count
-        FROM KHUYẾN_MÃI
+        FROM CHUONG_TRINH_KHUYEN_MAI
         WHERE MaKhuyenMai = :NEW.MaKhuyenMai
         AND TRUNC(SYSDATE) BETWEEN NgayBatDau AND NgayKetThuc;
 
@@ -96,26 +96,36 @@ BEGIN
             RAISE_APPLICATION_ERROR(-20033, 'Mã khuyến mãi không hợp lệ hoặc hết hạn.');
         END IF;
     END IF;
-END TRG_VE_CheckKhuyenMai;
+END TRG_AP_DUNG_CheckKhuyenMai;
 /
 
 -- TRIGGER 5: Auto-calculate final price with discount
-CREATE OR REPLACE TRIGGER TRG_VE_TinhGiaCuoi
-BEFORE INSERT OR UPDATE ON VE_XEM_PHIM
+CREATE OR REPLACE TRIGGER TRG_AP_DUNG_TinhGiaCuoi
+BEFORE INSERT ON AP_DUNG
 FOR EACH ROW
 DECLARE
-    v_PhanTramGiam NUMBER;
+    v_MucGiam NUMBER;
+    v_GiaGoc NUMBER;
+    v_GiaCuoi NUMBER;
 BEGIN
-    IF :NEW.MaKhuyenMai IS NOT NULL THEN
-        SELECT NVL(PhanTramGiam, 0) INTO v_PhanTramGiam
-        FROM KHUYẾN_MÃI
-        WHERE MaKhuyenMai = :NEW.MaKhuyenMai;
-        
-        :NEW.GiaVeCuoi := :NEW.GiaVe * (1 - v_PhanTramGiam / 100);
-    ELSE
-        :NEW.GiaVeCuoi := :NEW.GiaVe;
-    END IF;
-END TRG_VE_TinhGiaCuoi;
+    -- Get base price from ticket
+    SELECT GiaVeCuoi INTO v_GiaGoc
+    FROM VE_XEM_PHIM
+    WHERE MaVe = :NEW.MaVe;
+    
+    -- Get discount amount
+    SELECT NVL(MucGiam, 0) INTO v_MucGiam
+    FROM CHUONG_TRINH_KHUYEN_MAI
+    WHERE MaKhuyenMai = :NEW.MaKhuyenMai;
+    
+    -- Calculate final price (MucGiam is absolute amount)
+    v_GiaCuoi := v_GiaGoc - v_MucGiam;
+    
+    -- Update ticket with final price
+    UPDATE VE_XEM_PHIM
+    SET GiaVeCuoi = GREATEST(v_GiaCuoi, 0)
+    WHERE MaVe = :NEW.MaVe;
+END TRG_AP_DUNG_TinhGiaCuoi;
 /
 
 -- TRIGGER 6: Prevent double booking of seats
@@ -124,26 +134,29 @@ BEFORE INSERT ON VE_XEM_PHIM
 FOR EACH ROW
 DECLARE
     v_Count NUMBER;
-    v_SeatStatus GHE.TrangThai%TYPE;
 BEGIN
-    -- Check if seat already booked
+    -- Check if seat already booked for this showtimes
     SELECT COUNT(*) INTO v_Count
     FROM VE_XEM_PHIM
     WHERE MaSuatChieu = :NEW.MaSuatChieu
-    AND MaGhe = :NEW.MaGhe
-    AND TrangThai IN ('Chờ thanh toán', 'Đã thanh toán', 'Đã xem');
+    AND MaPhong = :NEW.MaPhong
+    AND HangGhe = :NEW.HangGhe
+    AND SoGhe = :NEW.SoGhe
+    AND TrangThai IN ('Đã đặt', 'Đã thanh toán');
 
     IF v_Count > 0 THEN
         RAISE_APPLICATION_ERROR(-20034, 'Ghế này đã được đặt cho suất chiếu này.');
     END IF;
 
-    -- Check seat status
-    SELECT TrangThai INTO v_SeatStatus
+    -- Check if seat exists
+    SELECT COUNT(*) INTO v_Count
     FROM GHE
-    WHERE MaGhe = :NEW.MaGhe;
+    WHERE MaPhong = :NEW.MaPhong
+    AND HangGhe = :NEW.HangGhe
+    AND SoGhe = :NEW.SoGhe;
 
-    IF v_SeatStatus NOT IN ('Trống', 'Có thể đặt', 'Đang giữ') THEN
-        RAISE_APPLICATION_ERROR(-20035, 'Ghế không khả dụng.');
+    IF v_Count = 0 THEN
+        RAISE_APPLICATION_ERROR(-20035, 'Ghế không tồn tại.');
     END IF;
 END TRG_VE_CheckGheAvailable;
 /
@@ -187,11 +200,23 @@ BEGIN
 END TRG_GOM_RestoreStock;
 /
 
--- TRIGGER 10: Update last modified timestamp
-CREATE OR REPLACE TRIGGER TRG_AutoTimestamp
-BEFORE UPDATE ON PHIM
+-- TRIGGER 10: Prevent delete of paid orders and tickets
+CREATE OR REPLACE TRIGGER TRG_PreventDeletePaidOrder
+BEFORE DELETE ON DON_HANG
 FOR EACH ROW
+DECLARE
+    v_Count NUMBER;
 BEGIN
-    :NEW.NgayCapNhat := SYSDATE;
-END TRG_AutoTimestamp;
+    -- Check if order has paid tickets
+    IF :OLD.TrangThai = 'Đã thanh toán' THEN
+        SELECT COUNT(*) INTO v_Count
+        FROM VE_XEM_PHIM
+        WHERE MaDonHang = :OLD.MaDonHang
+        AND TrangThai = 'Đã thanh toán';
+
+        IF v_Count > 0 THEN
+            RAISE_APPLICATION_ERROR(-20037, 'Không thể xóa đơn hàng đã thanh toán.');
+        END IF;
+    END IF;
+END TRG_PreventDeletePaidOrder;
 /

@@ -19,43 +19,80 @@ const HomePage = () => {
 
 
     useEffect(() => {
-        // 1. Lấy phim đang chiếu
-        axiosClient.get('/auth/dang-chieu')
-            .then(res => {
-                // Backend trả về data trong 'meta' (theo handleSuccessResponse)
-                const nowShowing = res.data.meta || res.data || [];
-                setNowShowingPhims(nowShowing);
+        // Lấy danh sách phim
+        axiosClient.get('/phim')
+            .then(async res => {
+                const phims = res.data.meta || res.data || [];
+                setPhims(phims);
                 
-                // FIX: Set phim nổi bật cho Banner (lấy phim đầu tiên)
-                if (nowShowing.length > 0) {
-                    setFeaturedMovie(nowShowing[0]);
+                // Set phim nổi bật cho Banner (lấy phim đầu tiên)
+                if (phims.length > 0) {
+                    setFeaturedMovie(phims[0]);
+                }
+                setNowShowingPhims(phims);
+                
+                // ✅ Lấy rating cho từng phim để sort Top Trending
+                try {
+                    const phimsWithRating = await Promise.all(
+                        phims.map(async (phim) => {
+                            try {
+                                const reviewRes = await axiosClient.get(`/phim/${phim.MAPHIM}/reviews`);
+                                return {
+                                    ...phim,
+                                    rating: reviewRes.data.meta?.averageRating || 0
+                                };
+                            } catch (err) {
+                                return {
+                                    ...phim,
+                                    rating: 0
+                                };
+                            }
+                        })
+                    );
+                    
+                    // Sort theo rating giảm dần, lấy top 5
+                    const topTrending = phimsWithRating
+                        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+                        .slice(0, 5);
+                    
+                    setTopTrendingPhims(topTrending);
+                } catch (err) {
+                    console.log('Error fetching ratings:', err);
+                    setTopTrendingPhims(phims.slice(0, 5));
                 }
             })
-            .catch(err => console.log('Error fetching now showing movies:', err));
-
-        // 2. Lấy phim Trending (Rating cao)
-        axiosClient.get('/auth/sorted-by-rating')
-            .then(res => {
-                // FIX: Sửa res.data.data thành res.data.meta
-                const topMovies = res.data.meta || [];
-                setTopTrendingPhims(topMovies);
-            })
-            .catch(err => console.log('Error fetching top trending movies:', err));
+            .catch(err => console.log('Error fetching movies:', err));
     }, []);
 
     const handleSearch = async () => {
         try {
-            // Gọi API filter thay vì chuyển trang
-            const res = await axiosClient.get('/auth/filter', {
+            // Gọi API tìm kiếm phim
+            const res = await axiosClient.get('/phim/search', {
                 params: {
-                    TenPhim: keyword,
-                    TheLoai: genre,
-                    Nam: year
+                    keyword: keyword
                 }
             });
             
-            // Cập nhật kết quả vào cả 2 danh sách
-            const results = res.data.data || [];
+            // Lấy kết quả từ API
+            let results = res.data.meta || [];
+            
+            // ✅ Filter thêm theo genre (CHUDEPHIM)
+            if (genre) {
+                results = results.filter(phim => 
+                    phim.CHUDEPHIM && phim.CHUDEPHIM.toLowerCase().includes(genre.toLowerCase())
+                );
+            }
+            
+            // ✅ Filter thêm theo năm (NGAYKHOICHIEU)
+            if (year) {
+                results = results.filter(phim => {
+                    if (!phim.NGAYKHOICHIEU) return false;
+                    const phimYear = new Date(phim.NGAYKHOICHIEU).getFullYear();
+                    return phimYear.toString() === year;
+                });
+            }
+            
+            // Cập nhật kết quả
             setNowShowingPhims(results);
             
             // Scroll xuống phần kết quả
@@ -65,8 +102,8 @@ const HomePage = () => {
         }
     };
     
-    // Lấy URL banner cuối cùng
-    const bannerUrl = featuredMovie?.Anh || DEFAULT_BANNER;
+    // Lấy URL banner cuối cùng (UPPERCASE từ database)
+    const bannerUrl = (featuredMovie?.ANH) || DEFAULT_BANNER;
     // Lấy khoảng 3 phim để hiển thị ở mục "Phim Đang Chiếu"
     const showingPhims = phims.slice(0, 3);
 
@@ -99,13 +136,13 @@ const HomePage = () => {
                         <input 
                             type="text" 
                             placeholder="Nhập tên phim..." 
-                            className="flex-1 bg-transparent border-b-2 border-gray-600 text-white placeholder-gray-400 px-3 py-3 focus:outline-none focus:border-[#00E5FF] transition rounded-t-lg"
+                            className="flex-1 bg-gray-800/50 border-b-2 border-gray-600 text-white placeholder-gray-400 px-3 py-3 focus:outline-none focus:border-[#00E5FF] focus:bg-gray-800 transition rounded-t-lg"
                             value={keyword}
                             onChange={(e) => setKeyword(e.target.value)}
                         />
                         
                         <select 
-                            className="bg-transparent border-b-2 border-gray-600 text-gray-300 px-3 py-3 focus:outline-none focus:border-[#00E5FF] cursor-pointer md:w-40 appearance-none rounded-t-lg"
+                            className="bg-gray-800/50 border-b-2 border-gray-600 text-gray-300 px-3 py-3 focus:outline-none focus:border-[#00E5FF] focus:bg-gray-800 cursor-pointer md:w-40 appearance-none rounded-t-lg"
                             onChange={(e) => setGenre(e.target.value)}
                         >
                             <option value="" className="bg-gray-900 text-white">Tất cả thể loại</option>
@@ -122,7 +159,7 @@ const HomePage = () => {
                         </select>
 
                         <select 
-                            className="bg-transparent border-b-2 border-gray-600 text-gray-300 px-3 py-3 focus:outline-none focus:border-[#00E5FF] cursor-pointer md:w-32 appearance-none rounded-t-lg"
+                            className="bg-gray-800/50 border-b-2 border-gray-600 text-gray-300 px-3 py-3 focus:outline-none focus:border-[#00E5FF] focus:bg-gray-800 cursor-pointer md:w-32 appearance-none rounded-t-lg"
                             onChange={(e) => setYear(e.target.value)}
                         >
                             <option value="" className="bg-gray-900 text-white">Tất cả năm</option>
@@ -138,7 +175,7 @@ const HomePage = () => {
 
                         <button 
                             onClick={handleSearch}
-                            className="bg-[#00E5FF] hover:bg-[#00cce6] text-black font-extrabold px-8 py-3 rounded-xl transition transform hover:scale-[1.02] shadow-[0_0_15px_rgba(0,229,255,0.4)] flex items-center justify-center gap-2"
+                            className="bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black font-extrabold px-8 py-3 rounded-xl transition transform hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30 flex items-center justify-center gap-2"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -158,7 +195,7 @@ const HomePage = () => {
                         <h2 className="text-3xl font-extrabold text-white border-l-4 border-[#00E5FF] pl-4">
                             PHIM ĐANG CHIẾU 🔥
                         </h2>
-                        <button className="text-gray-400 hover:text-[#00E5FF] text-sm font-medium transition flex items-center gap-1">
+                        <button className="text-[#00E5FF] hover:text-white hover:bg-[#00E5FF]/10 text-sm font-medium transition flex items-center gap-1 px-3 py-2 rounded-lg">
                             Xem tất cả 
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </button>
@@ -167,7 +204,7 @@ const HomePage = () => {
                     <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
                          {nowShowingPhims.length > 0 ? ( 
                             nowShowingPhims.map(phim => (
-                            <div key={phim.MaPhim} className="snap-center">
+                            <div key={phim.MAPHIM} className="snap-center">
                                     <MovieCard movie={phim} />
                                     </div>
                                 ))
@@ -185,15 +222,15 @@ const HomePage = () => {
                         <h2 className="text-3xl font-extrabold text-white border-l-4 border-yellow-500 pl-4">
                             TOP TRENDING 🏆
                         </h2>
-                        <select className="bg-gray-800 border border-gray-700 text-xs text-gray-300 rounded px-3 py-2 outline-none cursor-pointer hover:bg-gray-700 transition">
-                            <option className="bg-gray-900">Hôm nay</option>
-                            <option className="bg-gray-900">Tuần này</option>
+                        <select className="bg-[#00E5FF] border border-[#00E5FF] text-black text-xs font-semibold rounded px-4 py-2 outline-none cursor-pointer hover:bg-[#00cce6] transition shadow-[0_0_10px_rgba(0,229,255,0.3)]">
+                            <option className="bg-gray-900 text-white">Hôm nay</option>
+                            <option className="bg-gray-900 text-white">Tuần này</option>
                         </select>
                     </div>
                     <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide snap-x snap-mandatory">
                        {topTrendingPhims.length > 0 ? (  // top trending_______________________
                             topTrendingPhims.map(phim => (
-                                <div key={`trend-${phim.MaPhim}`} className="snap-center">
+                                <div key={`trend-${phim.MAPHIM}`} className="snap-center">
                                     <MovieCard movie={phim} />
                                 </div>
                             ))

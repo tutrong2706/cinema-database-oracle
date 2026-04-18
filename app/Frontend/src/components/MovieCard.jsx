@@ -1,11 +1,24 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import axiosClient from '../api/axiosClient';
 
 const DEFAULT_POSTER = "https://via.placeholder.com/300x450?text=No+Image";
 
 const MovieCard = ({ movie, variant = 'small' }) => {
-    // Thêm logic kiểm tra URL ảnh hợp lệ
-    const imageUrl = movie.Anh && typeof movie.Anh === 'string' && movie.Anh.startsWith('http') 
-        ? movie.Anh 
+    const [avgRating, setAvgRating] = useState(0);
+    
+    // Fetch average rating when component mounts
+    useEffect(() => {
+        axiosClient.get(`/phim/${movie.MAPHIM}/reviews`)
+            .then(res => {
+                setAvgRating(res.data.meta.averageRating || 0);
+            })
+            .catch(err => console.log('Error fetching rating:', err));
+    }, [movie.MAPHIM]);
+    
+    // Database trả về UPPERCASE: ANH, TENPHIM, MAPHIM
+    const imageUrl = movie.ANH && typeof movie.ANH === 'string' && movie.ANH.startsWith('http') 
+        ? movie.ANH 
         : DEFAULT_POSTER;
     const isLarge = variant === 'large';
 
@@ -22,7 +35,7 @@ const MovieCard = ({ movie, variant = 'small' }) => {
             <div className={isLarge ? 'aspect-[2/3] overflow-hidden rounded-xl bg-gray-800' : 'aspect-[2/3] overflow-hidden rounded-xl bg-gray-800'}>
                 <img 
                     src={imageUrl} 
-                    alt={movie.TenPhim} 
+                    alt={movie.TENPHIM} 
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_POSTER; }}
                 />
@@ -30,14 +43,14 @@ const MovieCard = ({ movie, variant = 'small' }) => {
 
             {/* Info below poster: title + rating */}
             <div className={isLarge ? 'mt-3 text-center px-1' : 'mt-2 text-center'}>
-                <p className={titleClass}>{movie.TenPhim}</p>
-                <p className={ratingClass}>⭐ {movie.DiemDanhGia ?? 'N/A'}</p>
+                <p className={titleClass}>{movie.TENPHIM}</p>
+                <p className={ratingClass}>⭐ {avgRating > 0 ? avgRating.toFixed(1) : 'N/A'}</p>
             </div>
 
             {/* Hover action */}
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center p-3 rounded-xl">
                 <Link 
-                    to={`/movie/${movie.MaPhim}`}
+                    to={`/movie/${movie.MAPHIM}`}
                     className="bg-[#00E5FF] text-black px-3 py-1 rounded-full font-bold text-xs transform scale-95 group-hover:scale-100 transition-transform duration-200 hover:bg-white shadow-lg"
                 >
                     Chi tiết

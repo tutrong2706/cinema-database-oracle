@@ -10,15 +10,9 @@ const LoginPage = () => {
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            // Tự động thêm @example.com nếu người dùng không nhập
-            let submitEmail = email;
-            if (!submitEmail.includes('@')) {
-                submitEmail += '@example.com';
-            }
-
             const res = await axiosClient.post('/auth/login', {
-                email: submitEmail,
-                password
+                email: email,
+                password: password
             });
             
             if (res.data.code === 200) {
@@ -27,7 +21,16 @@ const LoginPage = () => {
                 localStorage.setItem('user', JSON.stringify(res.data.meta.userInfo));
                 
                 alert('Đăng nhập thành công!');
-                navigate('/');
+                
+                // Auto-redirect Admin to AdminPage, customers to HomePage
+                const userInfo = res.data.meta.userInfo;
+                if (userInfo.vaiTro === 'Admin') {
+                    navigate('/admin');  // ✅ Admin auto-redirect to dashboard
+                } else {
+                    navigate('/');  // Customer go to home
+                }
+            } else {
+                alert(res.data.message || 'Đăng nhập thất bại');
             }
         } catch (error) {
             alert(error.response?.data?.message || 'Đăng nhập thất bại');
@@ -65,7 +68,7 @@ const LoginPage = () => {
                 </div>
                 <button 
                     type="submit" 
-                    className="w-full bg-[#00E5FF] text-black py-3 rounded-xl hover:bg-[#00cce6] transition font-bold text-lg shadow-[0_0_20px_rgba(0,229,255,0.4)]"
+                    className="w-full bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black py-3 rounded-xl transition transform hover:scale-105 font-bold text-lg shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30"
                 >
                     Đăng Nhập
                 </button>
