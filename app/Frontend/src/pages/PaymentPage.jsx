@@ -19,13 +19,20 @@ const PaymentPage = () => {
                     
                     // Map dữ liệu từ API về format của trang Payment
                     setBookingInfo({
-                        MaDonHang: data.MaDonHang,
-                        suatChieu: data.suatChieu,
-                        seats: data.seats,
-                        combos: data.combos,
-                        totalPrice: data.TongTien,
+                        MaDonHang: data.MADONHANG,
+                        suatChieu: {
+                            MASUATCHIEU: data.MASUATCHIEU,
+                            TENPHIM: data.TENPHIM,
+                            TENRAP: data.TENRAP,
+                            NGAYCHIEU: data.NGAYCHIEU,
+                            GIOBATDAU: data.GIOBATDAU,
+                            MAPHONG: data.MAPHONG
+                        },
+                        seats: data.seats || [],
+                        combos: data.combos || [],
+                        totalPrice: data.TONGTIEN,
                         isExistingOrder: true,
-                        status: data.TrangThai
+                        status: data.TRANGTHAI
                     });
                 } catch (error) {
                     alert("Không tìm thấy đơn hàng!");
@@ -55,14 +62,14 @@ const PaymentPage = () => {
             } else {
                 // Tạo đơn hàng mới và thanh toán luôn
                 const payload = {
-                    MaSuatChieu: bookingInfo.suatChieu.MaSuatChieu,
-                    MaPhong: bookingInfo.suatChieu.MaPhong,
+                    MaSuatChieu: bookingInfo.suatChieu.MASUATCHIEU,
+                    MaPhong: bookingInfo.suatChieu.MAPHONG,
                     DanhSachGhe: bookingInfo.seats,
-                    DanhSachCombo: bookingInfo.combos ? bookingInfo.combos.map(c => ({ MaHang: c.MaHang, SoLuong: c.SoLuong })) : [],
+                    DanhSachCombo: bookingInfo.combos ? bookingInfo.combos.map(c => ({ MaHang: c.MAHANG, SoLuong: c.SoLuong })) : [],
                     isPayLater: false
                 };
                 const res = await axiosClient.post('/auth/booking', payload);
-                if (res.data.code === 200) {
+                if (res.data.code === 201) {
                     alert(`Đặt vé thành công! Mã đơn: ${res.data.meta.MaDonHang}`);
                     localStorage.removeItem('bookingTemp');
                     navigate('/profile');
@@ -81,14 +88,14 @@ const PaymentPage = () => {
 
         try {
             const payload = {
-                MaSuatChieu: bookingInfo.suatChieu.MaSuatChieu,
-                MaPhong: bookingInfo.suatChieu.MaPhong,
+                MaSuatChieu: bookingInfo.suatChieu.MASUATCHIEU,
+                MaPhong: bookingInfo.suatChieu.MAPHONG,
                 DanhSachGhe: bookingInfo.seats,
-                DanhSachCombo: bookingInfo.combos ? bookingInfo.combos.map(c => ({ MaHang: c.MaHang, SoLuong: c.SoLuong })) : [],
+                DanhSachCombo: bookingInfo.combos ? bookingInfo.combos.map(c => ({ MaHang: c.MAHANG, SoLuong: c.SoLuong })) : [],
                 isPayLater: true
             };
             const res = await axiosClient.post('/auth/booking', payload);
-            if (res.data.code === 200) {
+            if (res.data.code === 201) {
                 alert(`Đã tạo đơn hàng! Vui lòng thanh toán sau. Mã đơn: ${res.data.meta.MaDonHang}`);
                 localStorage.removeItem('bookingTemp');
                 navigate('/profile');
@@ -139,9 +146,9 @@ const PaymentPage = () => {
             </h2>
             
             <div className="space-y-4 text-lg text-gray-300">
-                <p><strong>Phim:</strong> {bookingInfo.suatChieu.phim.TenPhim}</p>
-                <p><strong>Rạp:</strong> {bookingInfo.suatChieu.phong_chieu?.Ten || bookingInfo.suatChieu.phong_chieu?.TenRapPhim || 'Rạp'}</p>
-                <p><strong>Suất chiếu:</strong> {bookingInfo.suatChieu.GioBatDau} - {bookingInfo.suatChieu.NgayChieu ? new Date(bookingInfo.suatChieu.NgayChieu).toLocaleDateString('vi-VN') : ''}</p>
+                <p><strong>Phim:</strong> {bookingInfo.suatChieu.TENPHIM}</p>
+                <p><strong>Rạp:</strong> {bookingInfo.suatChieu.TENRAP || 'Rạp'}</p>
+                <p><strong>Suất chiếu:</strong> {new Date(bookingInfo.suatChieu.GIOBATDAU).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {bookingInfo.suatChieu.NGAYCHIEU ? new Date(bookingInfo.suatChieu.NGAYCHIEU).toLocaleDateString('vi-VN') : ''}</p>
                 <p><strong>Ghế:</strong> {bookingInfo.seats.map(s => `${s.HangGhe}${s.SoGhe}`).join(', ')}</p>
                 
                 {bookingInfo.combos && bookingInfo.combos.length > 0 && (
@@ -149,7 +156,7 @@ const PaymentPage = () => {
                         <strong>Combo:</strong>
                         <ul className="list-disc list-inside pl-4 text-gray-400 text-sm mt-1">
                             {bookingInfo.combos.map(c => (
-                                <li key={c.MaHang}>{c.TenHang} x {c.SoLuong} ({Number(c.DonGia).toLocaleString()} đ)</li>
+                                <li key={c.MAHANG}>{c.TENHANG} x {c.SoLuong} ({Number(c.DONGIA).toLocaleString('vi-VN')} đ)</li>
                             ))}
                         </ul>
                     </div>

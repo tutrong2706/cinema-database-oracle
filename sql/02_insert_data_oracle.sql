@@ -35,52 +35,52 @@ ALTER TABLE QUAN_LY DISABLE CONSTRAINT fk_ql_rap;
 SET DEFINE OFF;
 
 -- ========== 1. TÀI KHOẢN - KHÁCH HÀNG - QUẢN TRỊ VIÊN ==========
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH001', 'Nguyễn Văn A', 'Q1, TP.HCM', '0901111111', 'M', 'a@example.com', 'passA');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH002', 'Trần Thị B', 'Q3, TP.HCM', '0902222222', 'F', 'b@example.com', 'passB');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH003', 'Lê Văn C', 'Q5, TP.HCM', '0903333333', 'M', 'c@example.com', 'passC');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH004', 'Phạm Thị D', 'Q7, TP.HCM', '0904444444', 'F', 'd@example.com', 'passD');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH005', 'Hoàng Văn E', 'Tân Bình', '0905555555', 'M', 'e@example.com', 'passE');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH006', 'Vũ Thị F', 'Thủ Đức', '0906666666', 'F', 'f@example.com', 'passF');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH007', 'Đặng Văn G', 'Bình Thạnh', '0907777777', 'M', 'g@example.com', 'passG');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH008', 'Bùi Thị H', 'Gò Vấp', '0908888888', 'F', 'h@example.com', 'passH');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH009', 'Ngô Văn I', 'Q12, TP.HCM', '0909999999', 'M', 'i@example.com', 'passI');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH010', 'Đỗ Thị K', 'Q10, TP.HCM', '0910101010', 'F', 'k@example.com', 'passK');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH011', 'Nguyễn Văn L', 'Q1, TP.HCM', '0911111111', 'M', 'l@example.com', 'passL');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH012', 'Trần Thị M', 'Q3, TP.HCM', '0912222222', 'F', 'm@example.com', 'passM');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH013', 'Lê Văn N', 'Q5, TP.HCM', '0913333333', 'M', 'n@example.com', 'passN');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH014', 'Phạm Thị O', 'Q7, TP.HCM', '0914444444', 'F', 'o@example.com', 'passO');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH015', 'Hoàng Văn P', 'Tân Bình', '0915555555', 'M', 'p@example.com', 'passP');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH016', 'Vũ Thị Q', 'Thủ Đức', '0916666666', 'F', 'q@example.com', 'passQ');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH017', 'Đặng Văn R', 'Bình Thạnh', '0917777777', 'M', 'r@example.com', 'passR');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH018', 'Bùi Thị S', 'Gò Vấp', '0918888888', 'F', 's@example.com', 'passS');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH019', 'Ngô Văn T', 'Q12, TP.HCM', '0919999999', 'M', 't@example.com', 'passT');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('KH020', 'Đỗ Thị U', 'Q10, TP.HCM', '0920202020', 'F', 'u@example.com', 'passU');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('AD001', 'Admin Quản Lý', 'Q1, TP.HCM', '0911111111', 'M', 'admin1@example.com', 'admin1');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('AD002', 'Admin Trưởng Ca', 'Q1, TP.HCM', '0912222222', 'F', 'admin2@example.com', 'admin2');
-INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau) VALUES
-('AD003', 'Admin Kế Toán', 'Q3, TP.HCM', '0913333333', 'F', 'admin3@example.com', 'admin3');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH001', 'Nguyễn Văn A', 'Q1, TP.HCM', '0901111111', 'M', 'a@example.com', 'passA', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH002', 'Trần Thị B', 'Q3, TP.HCM', '0902222222', 'F', 'b@example.com', 'passB', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH003', 'Lê Văn C', 'Q5, TP.HCM', '0903333333', 'M', 'c@example.com', 'passC', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH004', 'Phạm Thị D', 'Q7, TP.HCM', '0904444444', 'F', 'd@example.com', 'passD', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH005', 'Hoàng Văn E', 'Tân Bình', '0905555555', 'M', 'e@example.com', 'passE', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH006', 'Vũ Thị F', 'Thủ Đức', '0906666666', 'F', 'f@example.com', 'passF', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH007', 'Đặng Văn G', 'Bình Thạnh', '0907777777', 'M', 'g@example.com', 'passG', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH008', 'Bùi Thị H', 'Gò Vấp', '0908888888', 'F', 'h@example.com', 'passH', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH009', 'Ngô Văn I', 'Q12, TP.HCM', '0909999999', 'M', 'i@example.com', 'passI', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH010', 'Đỗ Thị K', 'Q10, TP.HCM', '0910101010', 'F', 'k@example.com', 'passK', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH011', 'Nguyễn Văn L', 'Q1, TP.HCM', '0911111111', 'M', 'l@example.com', 'passL', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH012', 'Trần Thị M', 'Q3, TP.HCM', '0912222222', 'F', 'm@example.com', 'passM', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH013', 'Lê Văn N', 'Q5, TP.HCM', '0913333333', 'M', 'n@example.com', 'passN', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH014', 'Phạm Thị O', 'Q7, TP.HCM', '0914444444', 'F', 'o@example.com', 'passO', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH015', 'Hoàng Văn P', 'Tân Bình', '0915555555', 'M', 'p@example.com', 'passP', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH016', 'Vũ Thị Q', 'Thủ Đức', '0916666666', 'F', 'q@example.com', 'passQ', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH017', 'Đặng Văn R', 'Bình Thạnh', '0917777777', 'M', 'r@example.com', 'passR', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH018', 'Bùi Thị S', 'Gò Vấp', '0918888888', 'F', 's@example.com', 'passS', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH019', 'Ngô Văn T', 'Q12, TP.HCM', '0919999999', 'M', 't@example.com', 'passT', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('KH020', 'Đỗ Thị U', 'Q10, TP.HCM', '0920202020', 'F', 'u@example.com', 'passU', 'Khach');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('AD001', 'Admin Quản Lý', 'Q1, TP.HCM', '0911111111', 'M', 'admin1@example.com', 'admin1', 'Admin');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('AD002', 'Admin Trưởng Ca', 'Q1, TP.HCM', '0912222222', 'F', 'admin2@example.com', 'admin2', 'Admin');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('AD003', 'Admin Kế Toán', 'Q3, TP.HCM', '0913333333', 'F', 'admin3@example.com', 'admin3', 'Admin');
 
 COMMIT;
 
@@ -145,21 +145,66 @@ INSERT INTO PHONG_CHIEU (MaPhong, MaRapPhim, Ten, Loai, SucChua, SoGhe) VALUES (
 COMMIT;
 
 -- ========== GHẾ ==========
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'A', 1, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'A', 2, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'A', 3, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'B', 1, 'VIP');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'B', 2, 'VIP');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P002', 'A', 1, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P002', 'A', 2, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P003', 'C', 5, 'Đôi');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P003', 'C', 6, 'Đôi');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P004', 'A', 1, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P005', 'A', 1, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P006', 'D', 1, 'Giường nằm');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P006', 'D', 2, 'Giường nằm');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'E', 1, 'Thường');
-INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P001', 'E', 2, 'Thường');
+-- P001: 100 ghế (hàng A-D: 80 × Thường, hàng E-F: 20 × VIP)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P001', hang, stt, 'Thường'
+FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL UNION ALL SELECT 'D' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 20);
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P001', hang, stt, 'VIP'
+FROM (SELECT 'E' hang FROM DUAL UNION ALL SELECT 'F' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+
+COMMIT;
+
+-- P002: 80 ghế (hàng A,C,D: 30 × Thường; hàng B,E: 20 × VIP)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P002', hang, stt, 'Thường'
+FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'C' FROM DUAL UNION ALL SELECT 'D' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P002', hang, stt, 'VIP'
+FROM (SELECT 'B' hang FROM DUAL UNION ALL SELECT 'E' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+
+COMMIT;
+
+-- P003: 150 ghế (hàng A-G: 70 × Thường; hàng H-I: 20 × Đôi; hàng J-K: 20 × VIP)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'Thường'
+FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL 
+      UNION ALL SELECT 'D' FROM DUAL UNION ALL SELECT 'E' FROM DUAL UNION ALL SELECT 'F' FROM DUAL UNION ALL SELECT 'G' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'Đôi'
+FROM (SELECT 'H' hang FROM DUAL UNION ALL SELECT 'I' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'VIP'
+FROM (SELECT 'J' hang FROM DUAL UNION ALL SELECT 'K' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+    FOR stt IN 1..10 LOOP
+
+COMMIT;
+
+-- P004: 60 ghế (hàng A-C: 30 × Thường; hàng D-F: 30 × VIP)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P004', hang, stt, 'Thường'
+FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P004', hang, stt, 'VIP'
+FROM (SELECT 'D' hang FROM DUAL UNION ALL SELECT 'E' FROM DUAL UNION ALL SELECT 'F' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+
+COMMIT;
+
+-- P005: 90 ghế (hàng A-E: 50 × Thường; hàng F-I: 40 × VIP)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P005', hang, stt, 'Thường'
+FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL 
+      UNION ALL SELECT 'D' FROM DUAL UNION ALL SELECT 'E' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P005', hang, stt, 'VIP'
+FROM (SELECT 'F' hang FROM DUAL UNION ALL SELECT 'G' FROM DUAL UNION ALL SELECT 'H' FROM DUAL UNION ALL SELECT 'I' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+
+COMMIT;
+
+-- P006: 40 ghế (hàng A-D: 40 × Giường nằm VIP cao cấp)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P006', hang, stt, 'Giường nằm'
+FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL UNION ALL SELECT 'D' FROM DUAL),
+     (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
 
 COMMIT;
 
@@ -261,6 +306,48 @@ INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTi
 
 COMMIT;
 
+-- ========== VÉ XEM PHIM (Thêm vào đây - ĐÂY LÀ PHẦN MỚI) ==========
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE001', 'SC001', 'P001', 'A', 1, 'KH001', 'DH001', 60000, TO_TIMESTAMP('2025-12-20 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE002', 'SC002', 'P002', 'A', 1, 'KH002', 'DH002', 90000, TO_TIMESTAMP('2025-12-20 10:15:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE003', 'SC003', 'P003', 'J', 1, 'KH003', 'DH003', 40000, TO_TIMESTAMP('2025-12-20 11:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE005', 'SC012', 'P001', 'E', 1, 'KH005', 'DH005', 100000, TO_TIMESTAMP('2025-12-24 09:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE006', 'SC011', 'P002', 'B', 1, 'KH006', 'DH006', 90000, TO_TIMESTAMP('2025-12-24 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE007', 'SC004', 'P001', 'E', 2, 'KH007', 'DH007', 85000, TO_TIMESTAMP('2025-12-24 14:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE008', 'SC015', 'P004', 'D', 1, 'KH008', 'DH008', 90000, TO_TIMESTAMP('2025-12-25 18:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Chờ thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE009', 'SC004', 'P001', 'E', 3, 'KH009', 'DH009', 100000, TO_TIMESTAMP('2025-12-25 19:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE010', 'SC016', 'P005', 'F', 1, 'KH010', 'DH010', 120000, TO_TIMESTAMP('2025-12-31 20:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE011', 'SC016', 'P005', 'F', 2, 'KH010', 'DH010', 120000, TO_TIMESTAMP('2025-12-31 20:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE012', 'SC017', 'P003', 'J', 2, 'KH010', 'DH010', 105000, TO_TIMESTAMP('2025-12-31 20:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE013', 'SC014', 'P001', 'A', 3, 'KH001', 'DH011', 65000, TO_TIMESTAMP('2026-01-01 08:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE014', 'SC002', 'P002', 'A', 2, 'KH002', 'DH012', 90000, TO_TIMESTAMP('2026-01-01 14:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Hủy');
+
+COMMIT;
+
 -- ========== GỒM ==========
 INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH001','MH001',1,45000);
 INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH001','MH002',2,30000);
@@ -324,14 +411,60 @@ INSERT INTO TRINH_CHIEU (MaRapPhim, MaPhim) VALUES ('RAP005','PH001');
 COMMIT;
 
 -- ========== SUẤT CHIẾU ==========
+-- Ngày 20/12/2025 (Thứ 6): 9 suất
 INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
 ('SC001', 'PH001', 'P001', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 08:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 10:30:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
 INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
 ('SC002', 'PH002', 'P002', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 12:00:00', 'YYYY-MM-DD HH24:MI:SS'), 100000, 'Đang mở');
+
 INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
 ('SC003', 'PH003', 'P003', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 13:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 15:15:00', 'YYYY-MM-DD HH24:MI:SS'), 150000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC005', 'PH001', 'P001', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 15:30:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 18:00:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC006', 'PH002', 'P002', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 16:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 18:00:00', 'YYYY-MM-DD HH24:MI:SS'), 100000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC007', 'PH003', 'P003', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 18:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 20:15:00', 'YYYY-MM-DD HH24:MI:SS'), 150000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC008', 'PH001', 'P001', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 19:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 21:30:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC009', 'PH004', 'P004', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 13:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 14:50:00', 'YYYY-MM-DD HH24:MI:SS'), 110000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC010', 'PH005', 'P005', TO_DATE('2025-12-20', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-20 14:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-20 16:30:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+-- Ngày 24/12/2025 (Thứ 3 - Giáng Sinh): 4 suất
 INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
 ('SC004', 'PH001', 'P001', TO_DATE('2025-12-24', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-24 19:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-24 21:30:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC011', 'PH002', 'P002', TO_DATE('2025-12-24', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-24 15:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-24 17:00:00', 'YYYY-MM-DD HH24:MI:SS'), 100000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC012', 'PH006', 'P001', TO_DATE('2025-12-24', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-24 17:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-24 19:40:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC013', 'PH007', 'P002', TO_DATE('2025-12-24', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-24 19:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-24 20:55:00', 'YYYY-MM-DD HH24:MI:SS'), 100000, 'Đang mở');
+
+-- Ngày 25/12/2025 (Thứ 4 - tiếp Giáng Sinh): 2 suất
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC014', 'PH001', 'P001', TO_DATE('2025-12-25', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-25 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-25 12:30:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC015', 'PH008', 'P004', TO_DATE('2025-12-25', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-25 20:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-25 21:40:00', 'YYYY-MM-DD HH24:MI:SS'), 110000, 'Đang mở');
+
+-- Ngày 31/12/2025 (Thứ 3 - Đêm Giao thừa): 2 suất
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC016', 'PH005', 'P005', TO_DATE('2025-12-31', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-31 20:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-31 22:30:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC017', 'PH006', 'P003', TO_DATE('2025-12-31', 'YYYY-MM-DD'), TO_TIMESTAMP('2025-12-31 18:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2025-12-31 20:40:00', 'YYYY-MM-DD HH24:MI:SS'), 150000, 'Đang mở');
 
 COMMIT;
 
@@ -339,6 +472,20 @@ COMMIT;
 INSERT INTO QUAN_LY (MaNguoiDung_QTV, MaRapPhim) VALUES ('AD001', 'RAP001');
 INSERT INTO QUAN_LY (MaNguoiDung_QTV, MaRapPhim) VALUES ('AD002', 'RAP002');
 INSERT INTO QUAN_LY (MaNguoiDung_QTV, MaRapPhim) VALUES ('AD003', 'RAP003');
+
+COMMIT;
+
+-- ========== ÁP DỤNG KHUYẾN MÃI (AP_DUNG) ==========
+-- Áp dụng KM005 (Giáng Sinh 50k) cho vé ngày 24-25/12
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE005', 'KM005');
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE006', 'KM005');
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE007', 'KM005');
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE008', 'KM005');
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE009', 'KM005');
+
+-- Áp dụng KM002 (Silver 15k) cho vé của khách Silver
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE002', 'KM002');
+INSERT INTO AP_DUNG (MaVe, MaKhuyenMai) VALUES ('VE006', 'KM002');
 
 COMMIT;
 

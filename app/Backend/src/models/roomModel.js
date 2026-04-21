@@ -5,7 +5,7 @@ import { query, execute } from '../config/database.js';
  */
 export async function getAllRooms() {
     const sql = `
-        SELECT PC.MaPhong, PC.MaRapPhim, PC.Ten AS TENPHONG, PC.Loai, PC.SucChua, PC.SoGhe,
+        SELECT PC.MaPhong, PC.MaRapPhim, PC.Ten AS TEN, PC.Loai, PC.SucChua, PC.SoGhe,
                RC.Ten AS TENRAP
         FROM PHONG_CHIEU PC
         JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
@@ -19,7 +19,7 @@ export async function getAllRooms() {
  */
 export async function getRoomById(maPhong) {
     const sql = `
-        SELECT PC.MaPhong, PC.MaRapPhim, PC.Ten AS TENPHONG, PC.Loai, PC.SucChua, PC.SoGhe,
+        SELECT PC.MaPhong, PC.MaRapPhim, PC.Ten AS TEN, PC.Loai, PC.SucChua, PC.SoGhe,
                RC.Ten AS TENRAP
         FROM PHONG_CHIEU PC
         JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
@@ -34,7 +34,7 @@ export async function getRoomById(maPhong) {
  */
 export async function getRoomsBycinema(maRapPhim) {
     const sql = `
-        SELECT PC.MaPhong, PC.Ten AS TENPHONG, PC.Loai, PC.SucChua, PC.SoGhe
+        SELECT PC.MaPhong, PC.Ten AS TEN, PC.Loai, PC.SucChua, PC.SoGhe
         FROM PHONG_CHIEU PC
         WHERE PC.MaRapPhim = :1
         ORDER BY PC.Ten

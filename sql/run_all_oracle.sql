@@ -27,7 +27,6 @@ PROMPT ============= [01] Creating Tables =============
 -- 2. Insert initial data
 PROMPT ============= [02] Inserting Sample Data =============
 @/docker-entrypoint-initdb.d/02_insert_data_oracle.sql
-
 -- 3. Create stored procedures for movie management
 PROMPT ============= [03] Creating Movie Management Procedures =============
 @/docker-entrypoint-initdb.d/03_sp_phim_oracle.sql

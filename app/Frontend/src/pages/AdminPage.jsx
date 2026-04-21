@@ -23,6 +23,31 @@ const AdminPage = () => {
     const [revenue, setRevenue] = useState(null);
     const [orders, setOrders] = useState([]);
     const [suatchieu, setSuatchieu] = useState([]);
+    
+    // States for suất chiếu modal
+    const [isModalSuatChieuOpen, setIsModalSuatChieuOpen] = useState(false);
+    const [rapList, setRapList] = useState([]);
+    const [phongList, setPhongList] = useState([]);
+    const [phimList, setPhimList] = useState([]);
+    const [selectedRap, setSelectedRap] = useState('');
+    const [formSuatChieu, setFormSuatChieu] = useState({
+        MASUATCHIEU: '',
+        MAPHIM: '',
+        MAPHONG: '',
+        NGAYCHIEU: new Date().toISOString().split('T')[0],
+        GIOBATDAU: '08:00:00',
+        GIOKETTHUC: '10:30:00',
+        GIAVECOBAN: 120000,
+        TRANGTHAI: 'Đang mở'
+    });
+    
+    // States for detailed stats
+    const [detailedStats, setDetailedStats] = useState({
+        movieRevenue: [],
+        cinemaRevenue: [],
+        topMovies: [],
+        totalDailyRevenue: 0
+    });
 
     useEffect(() => {
         // Kiểm tra quyền admin
@@ -75,12 +100,92 @@ const AdminPage = () => {
             setSuatchieu(res.data.meta || []);
         } catch (error) { console.error('Fetch suất chiếu error:', error); }
     };
+    
+    const fetchPhongList = async () => {
+        try {
+            const res = await axiosClient.get('/phong');
+            setPhongList(res.data.meta || []);
+        } catch (error) { console.error('Fetch phòng error:', error); }
+    };
+    
+    const fetchPhimList = async () => {
+        try {
+            const res = await axiosClient.get('/phim');
+            setPhimList(res.data.meta || []);
+        } catch (error) { console.error('Fetch phim error:', error); }
+    };
+    
+    const fetchRapList = async () => {
+        try {
+            const res = await axiosClient.get('/rap');
+            setRapList(res.data.meta || []);
+        } catch (error) { console.error('Fetch rạp error:', error); }
+    };
+    
+    const fetchPhongByRap = async (maRap) => {
+        try {
+            if (!maRap) {
+                setPhongList([]);
+                return;
+            }
+            const res = await axiosClient.get(`/phong?rap=${maRap}`);
+            setPhongList(res.data.meta || []);
+        } catch (error) { console.error('Fetch phòng by rạp error:', error); }
+    };
+    
+    const loadDetailedStats = async () => {
+        try {
+            // Load detailed statistics from backend
+            const today = new Date().toISOString().split('T')[0];
+            const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+            
+            // Load both cinema revenue and movie revenue
+            const [movieRevRes, cinemaRevRes, topMoviesRes] = await Promise.all([
+                axiosClient.get(`/admin/revenue/movie?startDate=${startOfMonth}&endDate=${today}`).catch(() => ({ data: { meta: [] } })),
+                axiosClient.get(`/admin/revenue/cinema?startDate=${startOfMonth}&endDate=${today}`).catch(() => ({ data: { meta: [] } })),
+                axiosClient.get(`/admin/reports/top-movies?limit=5`).catch(() => ({ data: { meta: [] } }))
+            ]);
+            
+            console.log('Movie Revenue:', movieRevRes.data.meta);
+            console.log('Cinema Revenue:', cinemaRevRes.data.meta);
+            console.log('Top Movies:', topMoviesRes.data.meta);
+            
+            setDetailedStats({
+                movieRevenue: movieRevRes.data.meta || [],
+                cinemaRevenue: cinemaRevRes.data.meta || [],
+                topMovies: topMoviesRes.data.meta || [],
+                totalDailyRevenue: revenue?.TONGDOANHTHU || 0
+            });
+        } catch (error) {
+            console.error('Load detailed stats error:', error);
+        }
+    };
 
     useEffect(() => { fetchPhims(); }, [keyword]);
     
     useEffect(() => { 
-        if (activeTab === 'suatchieu') fetchSuatchieu(); 
+        if (activeTab === 'suatchieu') {
+            fetchSuatchieu();
+            fetchPhongList();
+            fetchPhimList();
+        }
+        if (activeTab === 'thongke') {
+            loadDetailedStats();
+        }
     }, [activeTab]);
+    
+    useEffect(() => {
+        if (isModalSuatChieuOpen) {
+            fetchRapList();
+            fetchPhimList();
+        }
+    }, [isModalSuatChieuOpen]);
+    
+    useEffect(() => {
+        if (activeTab === 'thongke') {
+            loadDetailedStats();
+        }
+    }, [activeTab, revenue]);
 
     // ... (Giữ nguyên handleDelete và handleSubmit) ...
     const handleDelete = async (id) => {
@@ -98,14 +203,20 @@ const AdminPage = () => {
         e.preventDefault();
         try {
             // Chuyển đổi các trường số sang number
-            const dataToSubmit = {
+            let dataToSubmit = {
                 ...formData,
                 THOILUONG: parseInt(formData.THOILUONG),
                 DOTUOI: parseInt(formData.DOTUOI)
             };
 
-            if (editingPhim) await axiosClient.put(`/admin/phims/${editingPhim.MAPHIM}`, dataToSubmit);
-            else await axiosClient.post('/admin/phims', dataToSubmit);
+            // Khi tạo mới, bỏ MAPHIM vì sẽ tự sinh trên backend
+            if (!editingPhim) {
+                const { MAPHIM, ...newData } = dataToSubmit;
+                dataToSubmit = newData;
+                await axiosClient.post('/admin/phims', dataToSubmit);
+            } else {
+                await axiosClient.put(`/admin/phims/${editingPhim.MAPHIM}`, dataToSubmit);
+            }
             
             alert(editingPhim ? "Cập nhật thành công!" : "Thêm mới thành công!");
             setIsModalOpen(false);
@@ -125,22 +236,50 @@ const AdminPage = () => {
 
     const openAdd = () => {
         setEditingPhim(null);
-        // Cài đặt giá trị mặc định cho form thêm mới
+        // Cài đặt giá trị mặc định cho form thêm mới (MAPHIM sẽ tự sinh)
         setFormData({
-            MAPHIM: 'PH888', 
-            TENPHIM: '3 heo con', 
-            THOILUONG: 90, // Mặc định 90 phút
+            MAPHIM: '', // Will be auto-generated on backend
+            TENPHIM: '', 
+            THOILUONG: 120, // Mặc định 120 phút
             NGONNGU: 'Tiếng Việt', // Mặc định Tiếng Việt
             QUOCGIA: 'Việt Nam', // Mặc định Việt Nam
-            DAODIEN: 'Trọngbro', 
-            DIENVIENCHINH: 'Thốngbro', 
+            DAODIEN: 'Chưa xác định', 
+            DIENVIENCHINH: 'Chưa xác định', 
             NGAYKHOICHIEU: new Date().toISOString().split('T')[0], // Mặc định là ngày hôm nay
             MOTANOINDUNG: 'Phim hay', 
             DOTUOI: 13, // Mặc định 13+
             CHUDEPHIM: 'Hành động', // Mặc định thể loại
-            ANH: 'https://i.pinimg.com/564x/d3/d4/19/d3d419e944662ef50d5de9216a06b82c.jpg'
+            ANH: 'https://via.placeholder.com/300x450?text=Poster'
         });
         setIsModalOpen(true);
+    };
+    
+    const handleAddSuatChieu = async (e) => {
+        e.preventDefault();
+        try {
+            // Remove MASUATCHIEU as it will be auto-generated on backend
+            const { MASUATCHIEU, ...dataToSubmit } = formSuatChieu;
+            dataToSubmit.GIAVECOBAN = parseInt(dataToSubmit.GIAVECOBAN);
+            
+            await axiosClient.post('/admin/suats', dataToSubmit);
+            alert("Thêm suất chiếu thành công!");
+            setIsModalSuatChieuOpen(false);
+            setSelectedRap('');
+            setFormSuatChieu({
+                MASUATCHIEU: '',
+                MAPHIM: '',
+                MAPHONG: '',
+                NGAYCHIEU: new Date().toISOString().split('T')[0],
+                GIOBATDAU: '08:00:00',
+                GIOKETTHUC: '10:30:00',
+                GIAVECOBAN: 120000,
+                TRANGTHAI: 'Đang mở'
+            });
+            fetchSuatchieu();
+        } catch (error) {
+            console.error(error);
+            alert("Lỗi: " + (error.response?.data?.message || error.message));
+        }
     };
 
     return (
@@ -171,7 +310,7 @@ const AdminPage = () => {
                                 : 'text-gray-400 hover:text-white'
                         }`}
                     >
-                        🎬 Quản Lý Phim
+                        🎬 Quản Lý
                     </button>
                     <button
                         onClick={() => setActiveTab('suatchieu')}
@@ -201,7 +340,7 @@ const AdminPage = () => {
                                 : 'text-gray-400 hover:text-white'
                         }`}
                     >
-                        📈 Báo Cáo Doanh Thu
+                        📈 Dashboard Doanh Thu
                     </button>
                 </div>
 
@@ -293,15 +432,26 @@ const AdminPage = () => {
                 {/* TAB 2: SUẤT CHIẾU */}
                 {activeTab === 'suatchieu' && (
                     <>
+                    <div className="mb-6 flex justify-between items-center">
+                        <h2 className="text-2xl font-bold text-white">🎞 Quản Lý Suất Chiếu</h2>
+                        <button 
+                            onClick={() => setIsModalSuatChieuOpen(true)}
+                            className="bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black px-5 py-2 rounded-lg font-bold transition transform hover:scale-105 shadow-[0_0_15px_rgba(0,229,255,0.4)]"
+                        >
+                            + Thêm Suất Chiếu Mới
+                        </button>
+                    </div>
                     <div className="bg-[#1a1a1a] rounded-xl overflow-x-auto border border-gray-800 shadow-2xl">
                         <table className="min-w-full text-left border-collapse">
                             <thead>
                                 <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
                                     <th className="p-4 font-semibold">Mã Suất</th>
                                     <th className="p-4 font-semibold">Phim</th>
+                                    <th className="p-4 font-semibold">Phòng</th>
                                     <th className="p-4 font-semibold">Rạp</th>
                                     <th className="p-4 font-semibold">Ngày Chiếu</th>
                                     <th className="p-4 font-semibold">Giờ Bắt Đầu</th>
+                                    <th className="p-4 font-semibold">Giá Vé</th>
                                     <th className="p-4 font-semibold">Trạng Thái</th>
                                     <th className="p-4 font-semibold text-right">Chức Năng</th>
                                 </tr>
@@ -312,16 +462,18 @@ const AdminPage = () => {
                                         <tr key={sc.MASUATCHIEU} className="hover:bg-gray-800/50 transition">
                                             <td className="p-4 text-gray-400 font-mono text-xs">{sc.MASUATCHIEU}</td>
                                             <td className="p-4 font-bold text-white">{sc.TENPHIM || 'N/A'}</td>
+                                            <td className="p-4 text-gray-300">{sc.TENPHONG || 'N/A'}</td>
                                             <td className="p-4 text-gray-300">{sc.TENRAP || 'N/A'}</td>
                                             <td className="p-4 text-gray-300">{sc.NGAYCHIEU ? new Date(sc.NGAYCHIEU).toLocaleDateString('vi-VN') : 'N/A'}</td>
-                                            <td className="p-4 text-gray-300">{sc.GIOBATDAU ? new Date(sc.GIOBATDAU).toLocaleTimeString('vi-VN') : 'N/A'}</td>
+                                            <td className="p-4 text-gray-300">{sc.GIOBATDAU ? new Date(sc.GIOBATDAU).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</td>
+                                            <td className="p-4 text-yellow-400 font-bold">{parseInt(sc.GIAVECOBAN || 0).toLocaleString('vi-VN')} đ</td>
                                             <td className="p-4">
                                                 <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                                    sc.TRANGTHAI === 'Mở bán' ? 'bg-green-500/20 text-green-400' :
-                                                    sc.TRANGTHAI === 'Kết thúc' ? 'bg-gray-500/20 text-gray-400' :
+                                                    sc.TRANGTHAI === 'Đang mở' ? 'bg-green-500/20 text-green-400' :
+                                                    sc.TRANGTHAI === 'Đã chiếu' ? 'bg-gray-500/20 text-gray-400' :
                                                     'bg-yellow-500/20 text-yellow-400'
                                                 }`}>
-                                                    {sc.TRANGTHAI}
+                                                    {sc.TRANGTHAI || 'N/A'}
                                                 </span>
                                             </td>
                                             <td className="p-4 flex justify-end gap-2">
@@ -332,7 +484,7 @@ const AdminPage = () => {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="7" className="p-8 text-center text-gray-400">Chưa có suất chiếu nào</td>
+                                        <td colSpan="9" className="p-8 text-center text-gray-400">Chưa có suất chiếu nào</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -344,38 +496,122 @@ const AdminPage = () => {
                 {/* TAB 3: THỐNG KÊ */}
                 {activeTab === 'thongke' && (
                     <>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Total Users */}
-                        <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-2xl p-8 border border-blue-700 shadow-2xl">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-300 text-sm mb-2">👥 Tổng Người Dùng</p>
-                                    <p className="text-4xl font-bold text-white">{userStats?.totalUsers || 0}</p>
+                    <div className="space-y-8">
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-2xl p-6 border border-blue-700 shadow-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-300 text-sm mb-2">👥 Tổng Người Dùng</p>
+                                        <p className="text-3xl font-bold text-white">{userStats?.totalUsers || 0}</p>
+                                    </div>
+                                    <div className="text-4xl opacity-20">👥</div>
                                 </div>
-                                <div className="text-5xl opacity-20">👥</div>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-red-900 to-red-800 rounded-2xl p-6 border border-red-700 shadow-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-300 text-sm mb-2">👑 Admin</p>
+                                        <p className="text-3xl font-bold text-white">{userStats?.admins || 0}</p>
+                                    </div>
+                                    <div className="text-4xl opacity-20">👑</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-green-900 to-green-800 rounded-2xl p-6 border border-green-700 shadow-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-300 text-sm mb-2">🎫 Khách Hàng</p>
+                                        <p className="text-3xl font-bold text-white">{userStats?.customers || 0}</p>
+                                    </div>
+                                    <div className="text-4xl opacity-20">🎫</div>
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-2xl p-6 border border-purple-700 shadow-2xl">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-gray-300 text-sm mb-2">💰 Tổng Doanh Thu</p>
+                                        <p className="text-xl font-bold text-white">{(revenue?.TONGDOANHTHU ? parseInt(revenue.TONGDOANHTHU) / 1000000 : 0).toFixed(1)}M đ</p>
+                                    </div>
+                                    <div className="text-4xl opacity-20">�</div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Admin Count */}
-                        <div className="bg-gradient-to-br from-red-900 to-red-800 rounded-2xl p-8 border border-red-700 shadow-2xl">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-300 text-sm mb-2">👑 Admin</p>
-                                    <p className="text-4xl font-bold text-white">{userStats?.admins || 0}</p>
+                        {/* Detailed Reports */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Top Movies */}
+                            <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-2xl overflow-hidden">
+                                <h3 className="text-lg font-bold text-white bg-gray-900 p-4 border-b border-gray-800">🎬 Top 5 Phim Có Doanh Thu Cao Nhất</h3>
+                                <div className="p-4 space-y-2 max-h-[300px] overflow-y-auto">
+                                    {detailedStats.topMovies && detailedStats.topMovies.length > 0 ? (
+                                        detailedStats.topMovies.map((movie, idx) => (
+                                            <div key={idx} className="flex justify-between items-center p-3 bg-gray-900/50 rounded-lg hover:bg-gray-900 transition">
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-white">{idx + 1}. {movie.TENPHIM || movie.TenPhim}</p>
+                                                    <p className="text-xs text-gray-400">🎫 {movie.SOVE || movie.SoVe} vé</p>
+                                                </div>
+                                                <p className="text-yellow-400 font-bold">{(movie.DOANHTHU ? parseInt(movie.DOANHTHU) / 1000000 : 0).toFixed(1)}M đ</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-400 text-center py-4">Chưa có dữ liệu</p>
+                                    )}
                                 </div>
-                                <div className="text-5xl opacity-20">👑</div>
+                            </div>
+
+                            {/* Cinema Revenue */}
+                            <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-2xl overflow-hidden">
+                                <h3 className="text-lg font-bold text-white bg-gray-900 p-4 border-b border-gray-800">🏢 Doanh Thu Theo Rạp</h3>
+                                <div className="p-4 space-y-2 max-h-[300px] overflow-y-auto">
+                                    {detailedStats.cinemaRevenue && detailedStats.cinemaRevenue.length > 0 ? (
+                                        detailedStats.cinemaRevenue.map((cinema, idx) => (
+                                            <div key={idx} className="flex justify-between items-center p-3 bg-gray-900/50 rounded-lg hover:bg-gray-900 transition">
+                                                <div className="flex-1">
+                                                    <p className="font-semibold text-white">{cinema.TENRAP || cinema.Ten}</p>
+                                                    <p className="text-xs text-gray-400">🎫 {cinema.SOVE || cinema.SoVe} vé</p>
+                                                </div>
+                                                <p className="text-yellow-400 font-bold">{(cinema.DOANHTHU ? parseInt(cinema.DOANHTHU) / 1000000 : 0).toFixed(1)}M đ</p>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-400 text-center py-4">Chưa có dữ liệu</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
-                        {/* Customer Count */}
-                        <div className="bg-gradient-to-br from-green-900 to-green-800 rounded-2xl p-8 border border-green-700 shadow-2xl">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-gray-300 text-sm mb-2">🎫 Khách Hàng</p>
-                                    <p className="text-4xl font-bold text-white">{userStats?.customers || 0}</p>
-                                </div>
-                                <div className="text-5xl opacity-20">🎫</div>
-                            </div>
+                        {/* Movie Revenue Table */}
+                        <div className="bg-[#1a1a1a] rounded-xl border border-gray-800 shadow-2xl overflow-x-auto">
+                            <h3 className="text-lg font-bold text-white bg-gray-900 p-4 border-b border-gray-800">📊 Chi Tiết Doanh Thu Theo Phim</h3>
+                            <table className="min-w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
+                                        <th className="p-4 font-semibold">Tên Phim</th>
+                                        <th className="p-4 font-semibold">Số Vé Bán</th>
+                                        <th className="p-4 font-semibold">Doanh Thu</th>
+                                        <th className="p-4 font-semibold">Giá Trung Bình</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-800">
+                                    {detailedStats.movieRevenue && detailedStats.movieRevenue.length > 0 ? (
+                                        detailedStats.movieRevenue.map((movie, idx) => (
+                                            <tr key={idx} className="hover:bg-gray-800/50 transition">
+                                                <td className="p-4 font-semibold text-white">{movie.TENPHIM || movie.TenPhim}</td>
+                                                <td className="p-4 text-gray-300">{movie.SOVE || movie.SoVe}</td>
+                                                <td className="p-4 text-yellow-400 font-bold">{(movie.DOANHTHU ? parseInt(movie.DOANHTHU) / 1000000 : 0).toFixed(2)}M đ</td>
+                                                <td className="p-4 text-gray-300">{movie.GIAB_TRUNGBINH ? parseInt(movie.GIAB_TRUNGBINH).toLocaleString('vi-VN') : 'N/A'} đ</td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="4" className="p-8 text-center text-gray-400">Chưa có dữ liệu</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                     </>
@@ -386,75 +622,98 @@ const AdminPage = () => {
                     <>
                     <div className="space-y-6">
                         {/* Revenue Summary */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-2xl p-8 border border-purple-700 shadow-2xl">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-2xl p-6 border border-purple-700 shadow-2xl">
                                 <p className="text-gray-300 text-sm mb-2">💰 Tổng Doanh Thu</p>
-                                <p className="text-4xl font-bold text-white">
-                                    {parseInt(revenue?.TONGDOANHTHU || 0).toLocaleString('vi-VN')} đ
+                                <p className="text-3xl font-bold text-white">
+                                    {(parseInt(revenue?.TONGDOANHTHU || 0) / 1000000).toFixed(1)}M đ
                                 </p>
-                                <p className="text-gray-400 text-sm mt-3">Từ các đơn hàng đã thanh toán</p>
+                                <p className="text-gray-400 text-xs mt-2">Từ các đơn hàng đã thanh toán</p>
                             </div>
 
-                            <div className="bg-gradient-to-br from-orange-900 to-orange-800 rounded-2xl p-8 border border-orange-700 shadow-2xl">
+                            <div className="bg-gradient-to-br from-orange-900 to-orange-800 rounded-2xl p-6 border border-orange-700 shadow-2xl">
                                 <p className="text-gray-300 text-sm mb-2">🛒 Tổng Đơn Hàng</p>
-                                <p className="text-4xl font-bold text-white">{revenue?.SODONHANG || 0}</p>
-                                <p className="text-gray-400 text-sm mt-3">Đơn hàng đã hoàn tất</p>
+                                <p className="text-3xl font-bold text-white">{revenue?.SODONHANG || 0}</p>
+                                <p className="text-gray-400 text-xs mt-2">Đơn hàng đã hoàn tất</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-blue-900 to-blue-800 rounded-2xl p-6 border border-blue-700 shadow-2xl">
+                                <p className="text-gray-300 text-sm mb-2">📊 Trung Bình/Đơn</p>
+                                <p className="text-3xl font-bold text-white">
+                                    {revenue?.SODONHANG > 0 ? (parseInt(revenue.TONGDOANHTHU || 0) / revenue.SODONHANG / 1000).toFixed(0) : 0}K đ
+                                </p>
+                                <p className="text-gray-400 text-xs mt-2">Giá trị trung bình mỗi đơn</p>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-green-900 to-green-800 rounded-2xl p-6 border border-green-700 shadow-2xl">
+                                <p className="text-gray-300 text-sm mb-2">📈 Tổng Khách</p>
+                                <p className="text-3xl font-bold text-white">{userStats?.customers || 0}</p>
+                                <p className="text-gray-400 text-xs mt-2">Khách hàng đã mua vé</p>
                             </div>
                         </div>
 
                         {/* Orders List */}
                         <div className="bg-[#1a1a1a] rounded-xl overflow-x-auto border border-gray-800 shadow-2xl">
-                            <h3 className="text-xl font-bold text-white p-6 border-b border-gray-800">📋 Danh Sách Tất Cả Đơn Hàng</h3>
-                            <table className="min-w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
-                                        <th className="p-4 font-semibold">Mã Đơn</th>
-                                        <th className="p-4 font-semibold">Khách Hàng</th>
-                                        <th className="p-4 font-semibold">Thời Gian</th>
-                                        <th className="p-4 font-semibold">Tổng Tiền</th>
-                                        <th className="p-4 font-semibold">Trạng Thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-800">
-                                    {orders.slice(0, 10).map(order => (
-                                        <tr key={order.MADONHANG} className="hover:bg-gray-800/50 transition">
-                                            <td className="p-4 text-gray-400 font-mono text-xs">{order.MADONHANG}</td>
-                                            <td className="p-4 text-white">{order.HOTEN || 'N/A'}</td>
-                                            <td className="p-4 text-gray-300">{new Date(order.THOIGIANDAT).toLocaleString('vi-VN')}</td>
-                                            <td className="p-4 text-yellow-400 font-bold">{parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ</td>
-                                            <td className="p-4">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                                                    order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400' :
-                                                    order.TRANGTHAI === 'Hủy' ? 'bg-red-500/20 text-red-400' :
-                                                    'bg-yellow-500/20 text-yellow-400'
-                                                }`}>
-                                                    {order.TRANGTHAI}
-                                                </span>
-                                            </td>
+                            <h3 className="text-xl font-bold text-white p-6 border-b border-gray-800">📋 Danh Sách Tất Cả Đơn Hàng ({orders.length})</h3>
+                            {orders.length > 0 ? (
+                                <table className="min-w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
+                                            <th className="p-4 font-semibold">Mã Đơn</th>
+                                            <th className="p-4 font-semibold">Khách Hàng</th>
+                                            <th className="p-4 font-semibold">Email</th>
+                                            <th className="p-4 font-semibold">Điện Thoại</th>
+                                            <th className="p-4 font-semibold">Thời Gian Đặt</th>
+                                            <th className="p-4 font-semibold">Tổng Tiền</th>
+                                            <th className="p-4 font-semibold">Trạng Thái</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-800">
+                                        {orders.map(order => (
+                                            <tr key={order.MADONHANG} className="hover:bg-gray-800/50 transition">
+                                                <td className="p-4 text-gray-400 font-mono text-xs">{order.MADONHANG}</td>
+                                                <td className="p-4 font-semibold text-white">{order.HOTEN || 'N/A'}</td>
+                                                <td className="p-4 text-gray-300">{order.EMAIL || 'N/A'}</td>
+                                                <td className="p-4 text-gray-300">{order.SDT || 'N/A'}</td>
+                                                <td className="p-4 text-gray-300 text-sm">{order.THOIGIANDAT ? new Date(order.THOIGIANDAT).toLocaleString('vi-VN') : 'N/A'}</td>
+                                                <td className="p-4 text-yellow-400 font-bold">{(parseInt(order.TONGTIEN || 0) / 1000).toFixed(0)}K đ</td>
+                                                <td className="p-4">
+                                                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                                        order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400' :
+                                                        order.TRANGTHAI === 'Hủy' ? 'bg-red-500/20 text-red-400' :
+                                                        'bg-yellow-500/20 text-yellow-400'
+                                                    }`}>
+                                                        {order.TRANGTHAI || 'Chờ thanh toán'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="p-8 text-center text-gray-400">
+                                    <p>📭 Chưa có đơn hàng nào</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                     </>
                 )}
             </div>
 
-            {/* Modal Form (Đã tối ưu style) */}
+            {/* Modal Form for Movie */}
             {isModalOpen && (
                 <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex justify-center items-center z-50 p-4">
                     <div className="!bg-gray-900 p-8 rounded-2xl w-full max-w-2xl border border-gray-700 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h2 className="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-3">{editingPhim ? 'Chỉnh Sửa Phim' : 'Thêm Phim Mới'}</h2>
                         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Input Fields (Đã sắp xếp lại và tối ưu style) */}
-                            {['MAPHIM', 'TENPHIM', 'THOILUONG', 'NGONNGU', 'QUOCGIA', 'DAODIEN', 'DIENVIENCHINH', 'DOTUOI', 'CHUDEPHIM'].map((field) => (
+                            {['TENPHIM', 'THOILUONG', 'NGONNGU', 'QUOCGIA', 'DAODIEN', 'DIENVIENCHINH', 'DOTUOI', 'CHUDEPHIM'].map((field) => (
                                 <div key={field}>
                                     <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">{field}</label>
                                     <input 
                                         type={field === 'THOILUONG' || field === 'DOTUOI' ? 'number' : 'text'}
-                                        required={field !== 'MAPHIM' || editingPhim} /* Bắt buộc trừ MAPHIM khi chỉnh sửa */
-                                        disabled={field === 'MAPHIM' && !!editingPhim}
+                                        required
                                         value={formData[field]} 
                                         onChange={e => setFormData({...formData, [field]: e.target.value})} 
                                         className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
@@ -495,6 +754,144 @@ const AdminPage = () => {
 
                             <div className="col-span-2 flex justify-end gap-4 mt-4">
                                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition">Hủy</button>
+                                <button type="submit" className="px-6 py-2 bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black font-bold rounded-lg transition transform hover:scale-105 shadow-[0_0_15px_rgba(0,229,255,0.4)]">Lưu</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Form for Suất Chiếu */}
+            {isModalSuatChieuOpen && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex justify-center items-center z-50 p-4">
+                    <div className="!bg-gray-900 p-8 rounded-2xl w-full max-w-2xl border border-gray-700 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h2 className="text-2xl font-bold mb-6 text-white border-b border-gray-700 pb-3">➕ Thêm Suất Chiếu Mới</h2>
+                        <form onSubmit={handleAddSuatChieu} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Chọn Rạp */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">🎬 Rạp Chiếu Phim</label>
+                                <select
+                                    required
+                                    value={selectedRap}
+                                    onChange={(e) => {
+                                        setSelectedRap(e.target.value);
+                                        fetchPhongByRap(e.target.value);
+                                        setFormSuatChieu({...formSuatChieu, MAPHONG: ''});
+                                    }}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                >
+                                    <option value="">-- Chọn Rạp --</option>
+                                    {rapList.map(rap => (
+                                        <option key={rap.MARAPHIM} value={rap.MARAPHIM}>
+                                            {rap.TEN} ({rap.THANHPHO})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Chọn Phim */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Phim</label>
+                                <select
+                                    required
+                                    value={formSuatChieu.MAPHIM}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, MAPHIM: e.target.value})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                >
+                                    <option value="">-- Chọn Phim --</option>
+                                    {phimList.map(phim => (
+                                        <option key={phim.MAPHIM} value={phim.MAPHIM}>
+                                            {phim.TENPHIM}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Chọn Phòng */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Phòng Chiếu {selectedRap ? '✓' : '(chọn rạp trước)'}</label>
+                                <select
+                                    required
+                                    disabled={!selectedRap}
+                                    value={formSuatChieu.MAPHONG}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, MAPHONG: e.target.value})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <option value="">-- Chọn Phòng --</option>
+                                    {phongList.map(phong => (
+                                        <option key={phong.MAPHONG} value={phong.MAPHONG}>
+                                            {phong.TEN} (Sức chứa: {phong.SUCCHUA})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Ngày Chiếu */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Ngày Chiếu</label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={formSuatChieu.NGAYCHIEU}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, NGAYCHIEU: e.target.value})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                />
+                            </div>
+
+                            {/* Giờ Bắt Đầu */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Giờ Bắt Đầu</label>
+                                <input
+                                    type="time"
+                                    required
+                                    value={formSuatChieu.GIOBATDAU.substring(0, 5)}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, GIOBATDAU: e.target.value + ':00'})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                />
+                            </div>
+
+                            {/* Giờ Kết Thúc */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Giờ Kết Thúc</label>
+                                <input
+                                    type="time"
+                                    required
+                                    value={formSuatChieu.GIOKETTHUC.substring(0, 5)}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, GIOKETTHUC: e.target.value + ':00'})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                />
+                            </div>
+
+                            {/* Giá Vé Cơ Bản */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Giá Vé Cơ Bản (VNĐ)</label>
+                                <input
+                                    type="number"
+                                    required
+                                    value={formSuatChieu.GIAVECOBAN}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, GIAVECOBAN: e.target.value})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                    placeholder="120000"
+                                    min="0"
+                                />
+                            </div>
+
+                            {/* Trạng Thái */}
+                            <div>
+                                <label className="block text-xs text-gray-400 uppercase mb-1 font-semibold">Trạng Thái</label>
+                                <select
+                                    value={formSuatChieu.TRANGTHAI}
+                                    onChange={e => setFormSuatChieu({...formSuatChieu, TRANGTHAI: e.target.value})}
+                                    className="w-full p-3 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#00E5FF] outline-none transition"
+                                >
+                                    <option value="Đang mở">Đang mở</option>
+                                    <option value="Hủy">Hủy</option>
+                                    <option value="Đã chiếu">Đã chiếu</option>
+                                </select>
+                            </div>
+
+                            <div className="col-span-2 flex justify-end gap-4 mt-4">
+                                <button type="button" onClick={() => setIsModalSuatChieuOpen(false)} className="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-semibold transition">Hủy</button>
                                 <button type="submit" className="px-6 py-2 bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] text-black font-bold rounded-lg transition transform hover:scale-105 shadow-[0_0_15px_rgba(0,229,255,0.4)]">Lưu</button>
                             </div>
                         </form>

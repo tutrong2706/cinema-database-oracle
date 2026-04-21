@@ -1,6 +1,6 @@
 import express from 'express';
-import { authMiddleware } from '../middleware/authMiddleware.js';
-import { roleMiddleware } from '../middleware/roleMiddleware.js';
+import { authenticateToken } from '../middleware/authMiddleware.js';
+import { roleRequired } from '../middleware/roleMiddleware.js';
 import * as orderController from '../controllers/orderController.js';
 
 const router = express.Router();
@@ -9,17 +9,17 @@ const router = express.Router();
 router.get('/orders/:id', orderController.getOrderById);
 
 // Customer routes (authenticated)
-router.get('/customer/orders', authMiddleware, orderController.getMyOrders);
-router.post('/orders', authMiddleware, orderController.createOrder);
+router.get('/customer/orders', authenticateToken, orderController.getMyOrders);
+router.post('/orders', authenticateToken, orderController.createOrder);
 
 // Admin routes (authenticated + admin role)
-router.get('/orders', authMiddleware, roleMiddleware('Admin'), orderController.getAllOrders);
-router.put('/orders/:id/status', authMiddleware, roleMiddleware('Admin'), orderController.updateOrderStatus);
-router.delete('/orders/:id', authMiddleware, roleMiddleware('Admin'), orderController.deleteOrder);
+router.get('/orders', authenticateToken, roleRequired(['Admin']), orderController.getAllOrders);
+router.put('/orders/:id/status', authenticateToken, roleRequired(['Admin']), orderController.updateOrderStatus);
+router.delete('/orders/:id', authenticateToken, roleRequired(['Admin']), orderController.deleteOrder);
 
 // Report routes
-router.get('/reports/revenue', authMiddleware, roleMiddleware('Admin'), orderController.getRevenueByDateRange);
-router.get('/reports/revenue-by-movie', authMiddleware, roleMiddleware('Admin'), orderController.getRevenueByMovie);
-router.get('/reports/revenue-by-cinema', authMiddleware, roleMiddleware('Admin'), orderController.getRevenueBycinema);
+router.get('/reports/revenue', authenticateToken, roleRequired(['Admin']), orderController.getRevenueByDateRange);
+router.get('/reports/revenue-by-movie', authenticateToken, roleRequired(['Admin']), orderController.getRevenueByMovie);
+router.get('/reports/revenue-by-cinema', authenticateToken, roleRequired(['Admin']), orderController.getRevenueBycinema);
 
 export default router;

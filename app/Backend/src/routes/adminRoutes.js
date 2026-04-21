@@ -23,6 +23,9 @@ router.delete('/suats/:id', authenticateToken, adminOnly, adminController.delete
 // Order and Revenue reports
 router.get('/orders', authenticateToken, adminOnly, adminController.getAllOrders);
 router.get('/revenue', authenticateToken, adminOnly, adminController.getRevenue);
+router.get('/revenue/movie', authenticateToken, adminOnly, adminController.getRevenueByMovie);
+router.get('/revenue/cinema', authenticateToken, adminOnly, adminController.getRevenueBycinema);
+router.get('/reports/top-movies', authenticateToken, adminOnly, adminController.getTopMovies);
 
 // User and Admin management
 router.post('/create-admin', authenticateToken, adminOnly, adminController.createAdmin);

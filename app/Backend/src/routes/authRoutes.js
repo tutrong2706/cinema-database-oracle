@@ -105,11 +105,20 @@ router.get('/profile', authenticateToken, authController.getProfile);
 // PUT /auth/profile/:userId - Cập nhật profile
 router.put('/profile/:userId', authenticateToken, authController.updateProfile);
 
+// POST /auth/booking - Tạo đơn hàng mới
+router.post('/booking', authenticateToken, bookingController.createBooking);
+
 // GET /auth/orders - Lấy đơn hàng của user
 router.get('/orders', authenticateToken, bookingController.getUserOrders);
 
 // GET /auth/orders/:id - Lấy chi tiết đơn hàng
 router.get('/orders/:id', authenticateToken, bookingController.getOrderDetail);
+
+// POST /auth/orders/:id/pay - Thanh toán đơn hàng
+router.post('/orders/:id/pay', authenticateToken, bookingController.payOrder);
+
+// POST /auth/orders/:id/cancel - Hủy đơn hàng
+router.post('/orders/:id/cancel', authenticateToken, bookingController.cancelOrder);
 
 // GET /auth/tickets - Lấy vé của user
 router.get('/tickets', authenticateToken, bookingController.getUserTickets);

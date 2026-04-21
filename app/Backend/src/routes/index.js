@@ -2,6 +2,12 @@ import express from 'express';
 import movieRoutes from './movieRoutes.js';
 import authRoutes from './authRoutes.js';
 import adminRoutes from './adminRoutes.js';
+import orderRoutes from './orderRoutes.js';
+import reviewRoutes from './reviewRoutes.js';
+import roomRoutes from './roomRoutes.js';
+import cinemaRoutes from './cinemaRoutes.js';
+import promotionRoutes from './promotionRoutes.js';
+import reportRoutes from './reportRoutes.js';
 
 const router = express.Router();
 
@@ -12,11 +18,29 @@ const router = express.Router();
 // Public movie routes
 router.use('/phim', movieRoutes);
 
+// Cinema and room routes (public)
+router.use('/', cinemaRoutes);
+
 // Auth and booking routes
 router.use('/auth', authRoutes);
 
 // Admin routes
 router.use('/admin', adminRoutes);
+
+// Order routes
+router.use('/', orderRoutes);
+
+// Review routes
+router.use('/', reviewRoutes);
+
+// Room routes
+router.use('/', roomRoutes);
+
+// Promotion routes
+router.use('/', promotionRoutes);
+
+// Report routes
+router.use('/', reportRoutes);
 
 // Health check
 router.get('/health', (req, res) => {
