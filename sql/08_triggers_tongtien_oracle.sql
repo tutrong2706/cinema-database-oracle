@@ -9,8 +9,6 @@ BEGIN
     UPDATE DON_HANG
     SET TongTien = TongTien + (:NEW.SoLuong * :NEW.DonGia)
     WHERE MaDonHang = :NEW.MaDonHang;
-    
-    COMMIT;
 END TRG_GOM_UpdateTongTien_Insert;
 /
 
@@ -22,8 +20,6 @@ BEGIN
     UPDATE DON_HANG
     SET TongTien = TongTien - (:OLD.SoLuong * :OLD.DonGia)
     WHERE MaDonHang = :OLD.MaDonHang;
-    
-    COMMIT;
 END TRG_GOM_UpdateTongTien_Delete;
 /
 
@@ -41,8 +37,6 @@ BEGIN
     UPDATE DON_HANG
     SET TongTien = TongTien - old_subtotal + new_subtotal
     WHERE MaDonHang = :NEW.MaDonHang;
-    
-    COMMIT;
 END TRG_GOM_UpdateTongTien_Update;
 /
 
@@ -54,8 +48,6 @@ BEGIN
     UPDATE DON_HANG
     SET TongTien = TongTien + NVL(:NEW.GiaVeCuoi, 0)
     WHERE MaDonHang = :NEW.MaDonHang;
-    
-    COMMIT;
 END TRG_VE_UpdateTongTien_Insert;
 /
 
@@ -67,8 +59,6 @@ BEGIN
     UPDATE DON_HANG
     SET TongTien = TongTien - NVL(:OLD.GiaVeCuoi, 0)
     WHERE MaDonHang = :OLD.MaDonHang;
-    
-    COMMIT;
 END TRG_VE_UpdateTongTien_Delete;
 /
 
@@ -86,8 +76,6 @@ BEGIN
     UPDATE DON_HANG
     SET TongTien = TongTien - old_price + new_price
     WHERE MaDonHang = :NEW.MaDonHang;
-    
-    COMMIT;
 END TRG_VE_UpdateTongTien_Update;
 /
 
@@ -104,29 +92,30 @@ END TRG_DonHang_CheckTongTien;
 
 -- TRIGGER 8: Auto-update payment status when full amount paid
 CREATE OR REPLACE TRIGGER TRG_ThanhToan_UpdateStatus
-AFTER INSERT ON THANH_TOAN
-FOR EACH ROW
-DECLARE
-    v_TongTien  DON_HANG.TongTien%TYPE;
-    v_DaTra     NUMBER;
-BEGIN
-    -- Get order total
-    SELECT TongTien INTO v_TongTien
-    FROM DON_HANG
-    WHERE MaDonHang = :NEW.MaDonHang;
+FOR INSERT ON THANH_TOAN
+COMPOUND TRIGGER
+    TYPE t_ma_don_hang_tab IS TABLE OF DON_HANG.MaDonHang%TYPE INDEX BY PLS_INTEGER;
+    g_ma_don_hang t_ma_don_hang_tab;
+    g_count PLS_INTEGER := 0;
 
-    -- Get total paid so far
-    SELECT NVL(SUM(SoTien), 0) INTO v_DaTra
-    FROM THANH_TOAN
-    WHERE MaDonHang = :NEW.MaDonHang;
+    AFTER EACH ROW IS
+    BEGIN
+        g_count := g_count + 1;
+        g_ma_don_hang(g_count) := :NEW.MaDonHang;
+    END AFTER EACH ROW;
 
-    -- If full amount paid, update order status
-    IF v_DaTra >= v_TongTien THEN
-        UPDATE DON_HANG
-        SET TrangThai = 'Đã thanh toán'
-        WHERE MaDonHang = :NEW.MaDonHang;
-    END IF;
-    
-    COMMIT;
+    AFTER STATEMENT IS
+    BEGIN
+        FOR i IN 1 .. g_count LOOP
+            UPDATE DON_HANG dh
+            SET TrangThai = 'Đã thanh toán'
+            WHERE dh.MaDonHang = g_ma_don_hang(i)
+              AND NVL((
+                    SELECT SUM(tt.SoTien)
+                    FROM THANH_TOAN tt
+                    WHERE tt.MaDonHang = dh.MaDonHang
+              ), 0) >= dh.TongTien;
+        END LOOP;
+    END AFTER STATEMENT;
 END TRG_ThanhToan_UpdateStatus;
 /
