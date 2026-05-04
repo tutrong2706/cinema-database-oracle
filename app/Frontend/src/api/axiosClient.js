@@ -22,8 +22,9 @@ axiosClient.interceptors.response.use(
         return response;
     },
     (error) => {
-        // Nếu token hết hạn hoặc invalid, xóa và redirect về login
-        if (error.response?.status === 401) {
+        // Nếu token hết hạn hoặc invalid cho các request bảo mật, xóa và redirect về login.
+        // Với request /auth/login, để trang login xử lý lỗi 401 và không reload.
+        if (error.response?.status === 401 && !error.config?.url?.includes('/auth/login')) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';

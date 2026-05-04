@@ -1,11 +1,11 @@
 -- ============================================================================
 -- INSERT DATA - ORACLE SYNTAX
 -- ============================================================================
-SET ECHO OFF;          -- Không nhắc lại câu lệnh đang chạy
-SET FEEDBACK OFF;      -- Không hiện thông báo "1 row created" hoặc "Table created"
-SET TERMOUT ON;        -- Vẫn hiện kết quả ra màn hình
-SET VERIFY OFF;        -- Không hiện chi tiết thay đổi biến &
-SET SERVEROUTPUT ON;   -- Bật để hiện thông báo từ DBMS_OUTPUT
+SET ECHO OFF          -- Không nhắc lại câu lệnh đang chạy
+SET FEEDBACK OFF      -- Không hiện thông báo "1 row created" hoặc "Table created"
+SET TERMOUT ON        -- Vẫn hiện kết quả ra màn hình
+SET VERIFY OFF        -- Không hiện chi tiết thay đổi biến &
+SET SERVEROUTPUT ON   -- Bật để hiện thông báo từ DBMS_OUTPUT
 -- Tắt kiểm tra khóa ngoại (Disable Constraints)
 ALTER TABLE GHE DISABLE CONSTRAINT fk_ghe_phong;
 ALTER TABLE THE_LOAI_PHIM DISABLE CONSTRAINT fk_theloai_phim;
@@ -32,7 +32,7 @@ ALTER TABLE QUAN_LY DISABLE CONSTRAINT fk_ql_qtv;
 ALTER TABLE QUAN_LY DISABLE CONSTRAINT fk_ql_rap;
 
 -- Đảm bảo không bị dừng ở ký tự &
-SET DEFINE OFF;
+SET DEFINE OFF
 
 -- ========== 1. TÀI KHOẢN - KHÁCH HÀNG - QUẢN TRỊ VIÊN ==========
 INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
@@ -81,6 +81,8 @@ INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau
 ('AD002', 'Admin Trưởng Ca', 'Q1, TP.HCM', '0912222222', 'F', 'admin2@example.com', 'admin2', 'Admin');
 INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
 ('AD003', 'Admin Kế Toán', 'Q3, TP.HCM', '0913333333', 'F', 'admin3@example.com', 'admin3', 'Admin');
+INSERT INTO TAI_KHOAN (MaNguoiDung, HoTen, DiaChi, SDT, GioiTinh, Email, MatKhau, VaiTro) VALUES
+('AD004', 'Admin Nội Bộ', 'Q2, TP.HCM', '0914444444', 'M', 'admin1', 'ad1', 'Admin');
 
 COMMIT;
 
@@ -166,17 +168,21 @@ FROM (SELECT 'B' hang FROM DUAL UNION ALL SELECT 'E' FROM DUAL),
 COMMIT;
 
 -- P003: 150 ghế (hàng A-G: 70 × Thường; hàng H-I: 20 × Đôi; hàng J-K: 20 × VIP)
+-- P003: 150 ghế (hàng A-G: 70 × Thường; hàng H-I: 20 × Đôi; hàng J-K: 20 × VIP)
 INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'Thường'
 FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL 
       UNION ALL SELECT 'D' FROM DUAL UNION ALL SELECT 'E' FROM DUAL UNION ALL SELECT 'F' FROM DUAL UNION ALL SELECT 'G' FROM DUAL),
      (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+
 INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'Đôi'
 FROM (SELECT 'H' hang FROM DUAL UNION ALL SELECT 'I' FROM DUAL),
      (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
+
 INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'VIP'
 FROM (SELECT 'J' hang FROM DUAL UNION ALL SELECT 'K' FROM DUAL),
      (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
-    FOR stt IN 1..10 LOOP
+
+-- Lưu ý: Không còn dòng "FOR stt IN 1..10 LOOP" ở đây nữa
 
 COMMIT;
 

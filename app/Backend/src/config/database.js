@@ -45,7 +45,7 @@ async function cleanOracleData(data) {
                             // Fetch CLOB data as string
                             cleaned[key] = await value.getData ? await value.getData() : '';
                         } catch (e) {
-                            console.warn(`⚠️ Failed to fetch CLOB for ${key}:`, e.message);
+                            console.warn(`Failed to fetch CLOB for ${key}:`, e.message);
                             cleaned[key] = '';
                         }
                     }

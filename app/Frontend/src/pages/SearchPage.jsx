@@ -1,146 +1,256 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axiosClient from '../api/axiosClient';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+
+const DEFAULT_POSTER = 'https://via.placeholder.com/300x450?text=No+Poster';
+
+/**
+ * Search Results Grid Component
+ */
+const SearchResults = ({ movies, loading, onBooking }) => {
+    if (loading) {
+        return (
+            <div className="min-h-[400px] flex items-center justify-center">
+                <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-t-[#00E5FF] border-gray-700 rounded-full animate-spin"></div>
+                    <div className="text-[#00E5FF] text-sm tracking-widest uppercase font-bold animate-pulse">Đang quét dữ liệu...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (movies.length === 0) {
+        return (
+            <div className="min-h-[400px] flex flex-col items-center justify-center text-gray-500">
+                <span className="text-4xl mb-4">🔍</span>
+                <p className="text-lg">Không tìm thấy dữ liệu phù hợp với bộ lọc</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {movies.map(movie => (
+                <div
+                    key={movie.MAPHIM}
+                    className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:shadow-lg hover:shadow-[#00E5FF]/20 hover:border-[#00E5FF]/50 transition-all cursor-pointer group"
+                    onClick={() => onBooking(movie.MAPHIM)}
+                >
+                    <div className="relative overflow-hidden">
+                        <img
+                            src={movie.ANH || DEFAULT_POSTER}
+                            alt={movie.TENPHIM}
+                            className="w-full h-72 object-cover group-hover:scale-110 transition-transform duration-500"
+                            onError={(e) => (e.target.src = DEFAULT_POSTER)}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80"></div>
+                        
+                        {/* Hiển thị điểm nổi bật */}
+                        {movie.DIEMTRUNGBINH && (
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm border border-yellow-500/50 text-yellow-400 px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1">
+                                ⭐ {movie.DIEMTRUNGBINH}/10
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-5 relative">
+                        <h3 className="text-[#00E5FF] font-bold text-lg truncate group-hover:text-white transition-colors">{movie.TENPHIM}</h3>
+                        <p className="text-gray-400 text-sm mt-1 flex justify-between">
+                            <span>🎬 {movie.DAODIEN || 'Chưa cập nhật'}</span>
+                            {movie.NAMPHATHANH && <span className="text-gray-500">{movie.NAMPHATHANH}</span>}
+                        </p>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
 
 const SearchPage = () => {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
-    const DEFAULT_POSTER = 'https://via.placeholder.com/40x56?text=N/A';
 
-    // Lấy keyword từ URL nếu có
-    const [keyword, setKeyword] = useState(searchParams.get('keyword') || '');
-    const [phims, setPhims] = useState([]);
+    // States cho các tham số tìm kiếm đa dạng
+    const [keyword, setKeyword] = useState(searchParams.get('q') || '');
+    const [genre, setGenre] = useState(searchParams.get('genre') || '');
+    const [minRating, setMinRating] = useState(searchParams.get('rating') || '0');
+    const [specialFilter, setSpecialFilter] = useState(searchParams.get('special') || '');
+    
+    const [showAdvanced, setShowAdvanced] = useState(false);
+    const [movies, setMovies] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    const fetchPhims = async (searchKeyword) => {
+    /**
+     * Fetch movies based on all complex conditions
+     */
+    const fetchMovies = useCallback(async (paramsObj) => {
         setLoading(true);
+        setError(null);
+
         try {
-            // Gọi API tìm kiếm đa năng (đã được cập nhật ở Backend để tìm theo Tên, Đạo diễn, Năm...)
-            const res = await axiosClient.get('/auth/phims/search', { 
-                params: { keyword: searchKeyword } 
-            });
-            // handleSuccessResponse trả về data trong meta hoặc data
-            setPhims(res.data.meta || res.data.data || []);
-        } catch (error) { 
-            console.error(error); 
-            setPhims([]);
+            // Loại bỏ các tham số rỗng để URL/Backend gọn gàng
+            const cleanParams = Object.fromEntries(
+                Object.entries(paramsObj).filter(([, v]) => v != null && v !== '' && v !== '0')
+            );
+
+            const response = await axiosClient.get('/phim/search', { params: cleanParams });
+            setMovies(response.data.meta || response.data.data || []);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Hệ thống vệ tinh tìm kiếm đang gặp sự cố');
+            setMovies([]);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
-    // Gọi tìm kiếm khi component mount (nếu có keyword trên URL hoặc mặc định rỗng để lấy tất cả)
+    /**
+     * Load initial search from URL params
+     */
     useEffect(() => {
-        fetchPhims(keyword);
-    }, []); 
+        fetchMovies({ keyword, genre, rating: minRating, special: specialFilter });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
-    const handleSearch = () => {
-        // Cập nhật URL để user có thể share link
-        setSearchParams({ keyword });
-        fetchPhims(keyword);
+    /**
+     * Handle search submit
+     */
+    const handleSearch = (e) => {
+        e.preventDefault();
+        
+        const paramsToUpdate = { q: keyword };
+        if (genre) paramsToUpdate.genre = genre;
+        if (minRating > 0) paramsToUpdate.rating = minRating;
+        if (specialFilter) paramsToUpdate.special = specialFilter;
+        
+        setSearchParams(paramsToUpdate);
+        fetchMovies({ keyword, genre, rating: minRating, special: specialFilter });
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') {
-            handleSearch();
-        }
-    };
-
-    const handleBooking = (id) => {
-        navigate(`/movie/${id}`);
+    /**
+     * Reset Filters
+     */
+    const handleReset = () => {
+        setKeyword('');
+        setGenre('');
+        setMinRating('0');
+        setSpecialFilter('');
+        setSearchParams({});
+        fetchMovies({});
     };
 
     return (
-        <div className="min-h-screen bg-gray-950 pt-24 px-6 pb-10">
-            <div className="container mx-auto">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-                    <h1 className="text-3xl font-extrabold text-white border-l-4 border-[#00E5FF] pl-4">TÌM KIẾM PHIM</h1>
-                </div>
+        <div className="min-h-screen bg-[#050505] pt-24 pb-12 px-4 selection:bg-[#00E5FF]/30">
+            <div className="max-w-7xl mx-auto">
+                
+                {/* Search Panel */}
+                <div className="bg-gray-900/50 border border-gray-800 backdrop-blur-md rounded-2xl p-6 mb-12 shadow-2xl">
+                    <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#00E5FF] to-blue-500 mb-6 uppercase tracking-tighter">
+                        Kho Dữ Liệu Phim
+                    </h1>
 
-                {/* Search Input Area */}
-                <div className="mb-8 bg-[#1a1a1a] p-6 rounded-xl border border-gray-800 shadow-lg">
-                    <div className="flex gap-4 flex-col md:flex-row">
-                        <input 
-                            type="text" 
-                            placeholder="Nhập tên phim, đạo diễn, diễn viên, năm sản xuất (VD: 2024)..." 
-                            className="flex-1 p-4 rounded-xl bg-gray-900 text-white border border-gray-700 focus:border-[#00E5FF] outline-none transition placeholder-gray-500"
-                            value={keyword}
-                            onChange={(e) => setKeyword(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                        />
-                        <button 
-                            onClick={handleSearch}
-                            className="bg-[#00E5FF] text-black px-8 py-4 rounded-xl font-bold hover:bg-[#00cce6] transition shadow-[0_0_15px_rgba(0,229,255,0.4)] whitespace-nowrap"
-                        >
-                            TÌM KIẾM
-                        </button>
-                    </div>
-                    <p className="text-gray-500 mt-2 text-sm italic">
-                        Nhập từ khóa và nhấn Enter hoặc nút TÌM KIẾM để bắt đầu.
-                    </p>
-                </div>
+                    <form onSubmit={handleSearch}>
+                        {/* Main Search Bar - (e. Query with a single condition) */}
+                        <div className="flex gap-3 mb-4">
+                            <input
+                                type="text"
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                placeholder="Nhập tên phim, đạo diễn..."
+                                className="flex-1 px-5 py-4 rounded-xl bg-black/50 text-white border border-gray-700 focus:border-[#00E5FF] focus:ring-1 focus:ring-[#00E5FF] outline-none transition"
+                            />
+                            <button
+                                type="submit"
+                                className="px-8 py-4 bg-gradient-to-r from-[#00E5FF] to-blue-600 text-black font-black rounded-xl hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all uppercase"
+                            >
+                                Tìm
+                            </button>
+                        </div>
 
-                {/* Table Results */}
-                <div className="bg-[#1a1a1a] rounded-xl overflow-x-auto border border-gray-800 shadow-2xl">
-                    <table className="min-w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-900 text-gray-400 text-xs uppercase tracking-wider">
-                                <th className="p-4 font-semibold">Mã</th>
-                                <th className="p-4 font-semibold">Poster</th>
-                                <th className="p-4 font-semibold">Tên Phim</th>
-                                <th className="p-4 font-semibold">Thông tin</th>
-                                <th className="p-4 font-semibold">Năm</th>
-                                <th className="p-4 font-semibold">Rating</th>
-                                <th className="p-4 font-semibold text-right">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-800">
-                            {loading ? (
-                                <tr><td colSpan="7" className="p-8 text-center text-white">Đang tìm kiếm...</td></tr>
-                            ) : phims.length > 0 ? (
-                                phims.map(p => (
-                                    <tr key={p.MaPhim} className="hover:bg-gray-800/50 transition">
-                                        <td className="p-4 text-gray-400 font-mono text-xs">{p.MaPhim}</td>
-                                        <td className="p-4">
-                                            <img 
-                                                src={p.Anh && typeof p.Anh === 'string' && p.Anh.startsWith('http') ? p.Anh : DEFAULT_POSTER} 
-                                                alt={p.TenPhim} 
-                                                className="w-12 h-16 object-cover rounded bg-gray-700 border border-gray-600"
-                                                onError={(e) => { e.target.onerror = null; e.target.src = DEFAULT_POSTER; }}
-                                            />
-                                        </td>
-                                        <td className="p-4">
-                                            <div className="font-bold text-white text-lg">{p.TenPhim}</div>
-                                            <div className="text-gray-400 text-xs mt-1">{p.ThoiLuong} phút</div>
-                                        </td>
-                                        <td className="p-4 text-gray-300 text-sm">
-                                            <div className="mb-1"><span className="text-gray-500">Đạo diễn:</span> {p.DaoDien || 'N/A'}</div>
-                                            <div><span className="text-gray-500">Quốc gia:</span> {p.QuocGia || 'N/A'}</div>
-                                        </td>
-                                        <td className="p-4 text-gray-300 font-mono">{new Date(p.NgayKhoiChieu).getFullYear()}</td>
-                                        <td className="p-4 text-yellow-400 font-bold text-lg">★ {p.DiemDanhGia || '0.0'}</td>
-                                        <td className="p-4 text-right">
-                                            <button 
-                                                onClick={() => handleBooking(p.MaPhim)} 
-                                                className="!bg-red-600 text-white hover:bg-red-700 px-6 py-2 rounded-lg transition text-sm font-bold shadow-lg"
-                                            >
-                                                ĐẶT VÉ
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="7" className="p-12 text-center text-gray-500 flex flex-col items-center justify-center">
-                                        <span className="text-4xl mb-2">🎬</span>
-                                        <span>Không tìm thấy phim nào phù hợp với từ khóa "{keyword}"</span>
-                                    </td>
-                                </tr>
+                        {/* Toggle Advanced */}
+                        <div className="flex justify-between items-center text-sm mb-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setShowAdvanced(!showAdvanced)}
+                                className="text-[#00E5FF] hover:text-white flex items-center gap-1 transition"
+                            >
+                                {showAdvanced ? '➖ Ẩn bộ lọc nâng cao' : '➕ Hiện bộ lọc nâng cao (SQL Complex)'}
+                            </button>
+                            {(keyword || genre || minRating > 0 || specialFilter) && (
+                                <button type="button" onClick={handleReset} className="text-gray-500 hover:text-red-400 underline transition">
+                                    Xóa bộ lọc
+                                </button>
                             )}
-                        </tbody>
-                    </table>
+                        </div>
+
+                        {/* Advanced Filters */}
+                        <div className={`grid grid-cols-1 md:grid-cols-3 gap-4 overflow-hidden transition-all duration-300 ${showAdvanced ? 'max-h-40 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                            
+                            {/* Thể loại (g. Query with a JOIN) */}
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Thể loại (Yêu cầu JOIN)</label>
+                                <select 
+                                    value={genre} 
+                                    onChange={(e) => setGenre(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg bg-black/50 text-gray-300 border border-gray-700 focus:border-[#00E5FF] outline-none"
+                                >
+                                    <option value="">Tất cả thể loại</option>
+                                    <option value="Hành Động">Hành Động</option>
+                                    <option value="Viễn Tưởng">Viễn Tưởng</option>
+                                    <option value="Kinh Dị">Kinh Dị</option>
+                                    <option value="Tình Cảm">Tình Cảm</option>
+                                </select>
+                            </div>
+
+                            {/* Điểm tối thiểu (f. Query with composite condition: Tên = X AND Điểm >= Y) */}
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Điểm tối thiểu: {minRating > 0 ? `${minRating}/10` : 'Mọi mức điểm'}</label>
+                                <input 
+                                    type="range" 
+                                    min="0" max="10" step="0.5"
+                                    value={minRating}
+                                    onChange={(e) => setMinRating(e.target.value)}
+                                    className="w-full mt-2 accent-[#00E5FF]"
+                                />
+                            </div>
+
+                            {/* Bộ lọc đặc biệt (h. Subquery & Aggregate) */}
+                            <div>
+                                <label className="block text-xs text-gray-500 uppercase font-bold mb-1">Truy vấn đặc biệt (Subquery/Avg)</label>
+                                <select 
+                                    value={specialFilter} 
+                                    onChange={(e) => setSpecialFilter(e.target.value)}
+                                    className="w-full px-4 py-3 rounded-lg bg-black/50 text-gray-300 border border-gray-700 focus:border-[#00E5FF] outline-none"
+                                >
+                                    <option value="">Mặc định</option>
+                                    <option value="above_avg">🔥 Phim có điểm {'>'} Trung bình toàn hệ thống</option>
+                                    <option value="top_sales">🎫 Phim có doanh thu cao nhất (Top 1)</option>
+                                </select>
+                            </div>
+
+                        </div>
+                    </form>
                 </div>
+
+                {/* Error Message */}
+                {error && (
+                    <div className="mb-6 p-4 bg-red-900/20 border-l-4 border-red-500 text-red-400 rounded-r-lg">
+                         {error}
+                    </div>
+                )}
+
+                {/* Results Count */}
+                {!loading && movies.length > 0 && (
+                    <p className="text-gray-500 text-sm mb-4 border-b border-gray-800 pb-2">
+                        Tìm thấy <span className="text-[#00E5FF] font-bold">{movies.length}</span> kết quả
+                    </p>
+                )}
+
+                {/* Results Grid */}
+                <SearchResults
+                    movies={movies}
+                    loading={loading}
+                    onBooking={(id) => navigate(`/movie/${id}`)}
+                />
             </div>
         </div>
     );

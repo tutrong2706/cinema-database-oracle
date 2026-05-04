@@ -21,8 +21,9 @@ export async function getDailyRevenue(req, res) {
 export async function getMonthlyRevenue(req, res) {
     try {
         const { year } = req.query;
+        const selectedYear = year || new Date().getFullYear().toString();
 
-        const revenue = await reportModel.getMonthlyRevenue(year);
+        const revenue = await reportModel.getMonthlyRevenue(selectedYear);
         return res.status(200).json(handleSuccessResponse(200, 'OK', revenue));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
@@ -34,7 +35,8 @@ export async function getMonthlyRevenue(req, res) {
  */
 export async function getRevenueByMovie(req, res) {
     try {
-        const revenue = await reportModel.getRevenueByMovie();
+        const { fromDate, toDate } = req.query;
+        const revenue = await reportModel.getRevenueByMovie(fromDate, toDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', revenue));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
@@ -46,7 +48,8 @@ export async function getRevenueByMovie(req, res) {
  */
 export async function getRevenueBycinema(req, res) {
     try {
-        const revenue = await reportModel.getRevenueBycinema();
+        const { fromDate, toDate } = req.query;
+        const revenue = await reportModel.getRevenueBycinema(fromDate, toDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', revenue));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
@@ -98,7 +101,8 @@ export async function getTopSpenders(req, res) {
  */
 export async function getOverviewStats(req, res) {
     try {
-        const overview = await reportModel.getOverviewStats();
+        const { fromDate, toDate } = req.query;
+        const overview = await reportModel.getOverviewStats(fromDate, toDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', overview));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
@@ -110,7 +114,8 @@ export async function getOverviewStats(req, res) {
  */
 export async function getRoomOccupancyRate(req, res) {
     try {
-        const occupancy = await reportModel.getRoomOccupancyRate();
+        const { fromDate, toDate } = req.query;
+        const occupancy = await reportModel.getRoomOccupancyRate(fromDate, toDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', occupancy));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));

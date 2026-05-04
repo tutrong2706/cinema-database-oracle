@@ -10,17 +10,19 @@ export async function getDailyRevenue(startDate, endDate) {
                SUM(DH.TongTien) AS TONGTIEN
         FROM DON_HANG DH
         WHERE DH.TrangThai = 'Đã thanh toán'
-          AND TRUNC(DH.ThoiGianDat) BETWEEN :1 AND :2
+          AND (:1 IS NULL OR TRUNC(DH.ThoiGianDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(DH.ThoiGianDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY TRUNC(DH.ThoiGianDat)
         ORDER BY NGAY DESC
     `;
-    return await query(sql, [startDate, endDate]);
+    return await query(sql, [startDate || null, endDate || null]);
 }
 
 /**
  * Lấy doanh thu theo tháng
  */
 export async function getMonthlyRevenue(year) {
+    const selectedYear = year || new Date().getFullYear().toString();
     const sql = `
         SELECT TO_CHAR(DH.ThoiGianDat, 'MM') AS THANG,
                TO_CHAR(DH.ThoiGianDat, 'YYYY-MM') AS THANG_FULL,
@@ -32,7 +34,7 @@ export async function getMonthlyRevenue(year) {
         GROUP BY TO_CHAR(DH.ThoiGianDat, 'MM'), TO_CHAR(DH.ThoiGianDat, 'YYYY-MM')
         ORDER BY THANG
     `;
-    return await query(sql, [year]);
+    return await query(sql, [selectedYear]);
 }
 
 /**
@@ -48,11 +50,12 @@ export async function getRevenueByMovie(startDate, endDate) {
         JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
         JOIN PHIM P ON SC.MaPhim = P.MaPhim
         WHERE V.TrangThai = 'Đã thanh toán'
-          AND TRUNC(V.NgayDat) BETWEEN :1 AND :2
+          AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY P.MaPhim, P.TenPhim
         ORDER BY DOANHTHU DESC
     `;
-    return await query(sql, [startDate, endDate]);
+    return await query(sql, [startDate || null, endDate || null]);
 }
 
 /**
@@ -69,11 +72,12 @@ export async function getRevenueBycinema(startDate, endDate) {
         JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
         JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
         WHERE V.TrangThai = 'Đã thanh toán'
-          AND TRUNC(V.NgayDat) BETWEEN :1 AND :2
+          AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY RC.MaRapPhim, RC.Ten
         ORDER BY DOANHTHU DESC
     `;
-    return await query(sql, [startDate, endDate]);
+    return await query(sql, [startDate || null, endDate || null]);
 }
 
 /**
@@ -140,19 +144,23 @@ export async function getOverviewStats(startDate, endDate) {
         SELECT 
             (SELECT COUNT(DISTINCT MaDonHang) FROM DON_HANG 
              WHERE TrangThai = 'Đã thanh toán' 
-               AND TRUNC(ThoiGianDat) BETWEEN :1 AND :2) AS TONG_HOADON,
+               AND (:1 IS NULL OR TRUNC(ThoiGianDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+               AND (:2 IS NULL OR TRUNC(ThoiGianDat) <= TO_DATE(:2, 'YYYY-MM-DD'))) AS TONG_HOADON,
             (SELECT SUM(TongTien) FROM DON_HANG 
              WHERE TrangThai = 'Đã thanh toán' 
-               AND TRUNC(ThoiGianDat) BETWEEN :1 AND :2) AS TONG_DOANHTHU,
+               AND (:1 IS NULL OR TRUNC(ThoiGianDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+               AND (:2 IS NULL OR TRUNC(ThoiGianDat) <= TO_DATE(:2, 'YYYY-MM-DD'))) AS TONG_DOANHTHU,
             (SELECT COUNT(DISTINCT MaVe) FROM VE_XEM_PHIM 
              WHERE TrangThai = 'Đã thanh toán' 
-               AND TRUNC(NgayDat) BETWEEN :1 AND :2) AS TONG_VE,
+               AND (:1 IS NULL OR TRUNC(NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+               AND (:2 IS NULL OR TRUNC(NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))) AS TONG_VE,
             (SELECT COUNT(DISTINCT MaNguoiDung_KH) FROM VE_XEM_PHIM 
              WHERE TrangThai = 'Đã thanh toán' 
-               AND TRUNC(NgayDat) BETWEEN :1 AND :2) AS KHACHHANG_MUA
+               AND (:1 IS NULL OR TRUNC(NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+               AND (:2 IS NULL OR TRUNC(NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))) AS KHACHHANG_MUA
         FROM DUAL
     `;
-    const results = await query(sql, [startDate, endDate]);
+    const results = await query(sql, [startDate || null, endDate || null]);
     return results.length > 0 ? results[0] : null;
 }
 
@@ -171,9 +179,10 @@ export async function getRoomOccupancyRate(startDate, endDate) {
         LEFT JOIN SUAT_CHIEU SC ON PC.MaPhong = SC.MaPhong
         LEFT JOIN VE_XEM_PHIM V ON SC.MaSuatChieu = V.MaSuatChieu 
             AND V.TrangThai = 'Đã thanh toán'
-            AND TRUNC(V.NgayDat) BETWEEN :1 AND :2
+            AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+            AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY PC.MaPhong, PC.Ten, PC.SucChua
         ORDER BY TYLE_LAPDAY DESC
     `;
-    return await query(sql, [startDate, endDate]);
+    return await query(sql, [startDate || null, endDate || null]);
 }

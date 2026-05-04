@@ -1,6 +1,6 @@
 -- ORACLE VERSION: Stored Procedures for DON_HANG (Order) Management
 -- ============================================================================
-set echo off;
+set echo off
 -- 1. CREATE NEW ORDER
 CREATE OR REPLACE PROCEDURE SP_TaoDonHang (
     p_MaDonHang      IN DON_HANG.MaDonHang%TYPE,

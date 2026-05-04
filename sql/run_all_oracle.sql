@@ -7,10 +7,10 @@
 -- Then: @run_all_oracle.sql
 -- ============================================================================
 
-SET ECHO ON;
-SET TIMING ON;
+SET ECHO ON
+SET TIMING ON
 
-SPOOL run_all_oracle.log;
+SPOOL run_all_oracle.log
 
 PROMPT ========================================================================
 PROMPT          CINEMA DATABASE - ORACLE MIGRATION COMPLETE
@@ -75,8 +75,8 @@ PROMPT ============= DATABASE MIGRATION COMPLETE! =============
 SPOOL OFF;
 
 -- Display migration summary
-SET HEADING ON;
-SET PAGESIZE 20;
+SET HEADING ON
+SET PAGESIZE 20
 
 PROMPT ========================================================================
 PROMPT          ORACLE DATABASE OBJECTS SUMMARY

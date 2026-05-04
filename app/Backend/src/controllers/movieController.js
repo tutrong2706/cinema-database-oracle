@@ -36,8 +36,8 @@ export async function getMovieDetail(req, res) {
  */
 export async function searchMovies(req, res) {
     try {
-        const { keyword = '' } = req.query;
-        const phims = await movieModel.searchMovies(keyword);
+        const { keyword = '', genre = '', rating = '0', special = '' } = req.query;
+        const phims = await movieModel.searchMovies(keyword, genre, rating, special);
         return res.status(200).json(handleSuccessResponse(200, 'Tìm kiếm thành công', phims));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));

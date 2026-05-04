@@ -37,9 +37,25 @@ router.get('/', movieController.getAllMovies);
  *     parameters:
  *       - in: query
  *         name: keyword
- *         required: true
+ *         required: false
  *         schema:
  *           type: string
+ *       - in: query
+ *         name: genre
+ *         required: false
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: rating
+ *         required: false
+ *         schema:
+ *           type: number
+ *       - in: query
+ *         name: special
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [above_avg, top_sales]
  *     responses:
  *       200:
  *         description: Kết quả tìm kiếm

@@ -3,9 +3,9 @@
 -- ============================================================================
 -- Chạy script này để verify tất cả stored procedures, functions, triggers hoạt động
 
-SET SERVEROUTPUT ON;
-SET ECHO ON;
-SET FEEDBACK ON;
+SET SERVEROUTPUT ON
+SET ECHO ON
+SET FEEDBACK ON
 
 PROMPT ============= BẮTĐẦU TEST DATABASE =============
 

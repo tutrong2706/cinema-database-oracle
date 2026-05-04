@@ -48,9 +48,9 @@ export async function getMovieById(maPhim) {
 /**
  * Tìm phim theo tên (search)
  */
-export async function searchMovies(keyword) {
-    const sql = `
-        SELECT 
+export async function searchMovies(keyword = '', genre = '', rating = '0', special = '') {
+    const sqlParts = [
+        `SELECT 
             MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, 
             NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh,
             DiemTrungBinh AS DIEMDANHGIA,
@@ -61,11 +61,39 @@ export async function searchMovies(keyword) {
                 WHEN TongDoanhThu > 100000 THEN 'Bình thường (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
                 ELSE 'Cần cải thiện (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
             END AS HIEUQUAMOI
-        FROM V_PHIM_SORTED 
-        WHERE LOWER(TenPhim) LIKE LOWER(:1) 
-        ORDER BY NgayKhoiChieu DESC
-    `;
-    return await query(sql, [`%${keyword}%`]);
+        FROM V_PHIM_SORTED
+        WHERE 1=1`
+    ];
+
+    const binds = [];
+
+    if (keyword.trim() !== '') {
+        sqlParts.push(`AND (LOWER(TenPhim) LIKE LOWER(:${binds.length + 1}) OR LOWER(DaoDien) LIKE LOWER(:${binds.length + 2}) OR LOWER(DienVienChinh) LIKE LOWER(:${binds.length + 3}))`);
+        binds.push(`%${keyword.trim()}%`, `%${keyword.trim()}%`, `%${keyword.trim()}%`);
+    }
+
+    if (genre.trim() !== '') {
+        sqlParts.push(`AND LOWER(ChuDePhim) LIKE LOWER(:${binds.length + 1})`);
+        binds.push(`%${genre.trim()}%`);
+    }
+
+    if (!isNaN(Number(rating)) && Number(rating) > 0) {
+        sqlParts.push(`AND NVL(DiemTrungBinh, 0) >= :${binds.length + 1}`);
+        binds.push(Number(rating));
+    }
+
+    if (special === 'above_avg') {
+        sqlParts.push(`AND DiemTrungBinh > (SELECT NVL(AVG(DiemTrungBinh), 0) FROM V_PHIM_SORTED)`);
+    }
+
+    sqlParts.push('ORDER BY NgayKhoiChieu DESC');
+
+    if (special === 'top_sales') {
+        sqlParts.push('FETCH FIRST 1 ROWS ONLY');
+    }
+
+    const sql = sqlParts.join('\n');
+    return await query(sql, binds);
 }
 
 /**

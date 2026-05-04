@@ -1,6 +1,6 @@
 -- ORACLE VERSION: Stored Procedures for PHIM (Movie) Management
 -- ============================================================================
-set echo on;
+set echo on
 -- 1. INSERT NEW MOVIE
 CREATE OR REPLACE PROCEDURE SP_Insert_PHIM (
     p_MaPhim      IN PHIM.MaPhim%TYPE,
