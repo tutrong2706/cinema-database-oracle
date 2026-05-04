@@ -41,9 +41,11 @@ export async function getOrderById(req, res) {
  */
 export async function getMyOrders(req, res) {
     try {
-        const maNguoiDung = req.user?.MaNguoiDung;
+        // Đổi MaNguoiDung thành userId cho khớp với file authController.js
+        const maNguoiDung = req.user?.userId; 
+        
         if (!maNguoiDung) {
-            return res.status(401).json(handleErrorResponse(401, 'Chưa đăng nhập'));
+            return res.status(401).json(handleErrorResponse(401, 'Không tìm thấy ID người dùng trong Token'));
         }
 
         const orders = await orderModel.getCustomerOrders(maNguoiDung);

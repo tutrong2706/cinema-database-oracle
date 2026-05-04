@@ -3,10 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/config/swagger.js';
-import { testConnection } from './src/config/database.js';
+import { initialize, testConnection } from './src/config/database.js';
 import { errorHandler } from './src/middleware/authMiddleware.js';
 import apiRoutes from './src/routes/index.js';
-
 // Load environment variables
 dotenv.config();
 process.env.NODE_ORACLEDB_THIN_MODE = 1;
@@ -69,6 +68,7 @@ app.use(errorHandler);
 async function startServer() {
     try {
         // Test database connection
+        await initialize();
         await testConnection();
         console.log('✓ Database connection verified');
 

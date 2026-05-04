@@ -49,11 +49,16 @@ export async function getScreeningsByFilter(maPhim, maRap, ngayChieu) {
     }
 
     if (ngayChieu) {
+        // Nếu có chọn ngày -> Lọc đúng ngày đó
         sql += ` AND TRUNC(SC.NgayChieu) = TO_DATE(:${params.length + 1}, 'YYYY-MM-DD')`;
         params.push(ngayChieu);
+    } else {
+        // Nếu KHÔNG chọn ngày -> Lọc từ ngày hôm nay trở về sau
+        sql += ` AND TRUNC(SC.NgayChieu) >= TRUNC(SYSDATE)`; 
     }
 
-    sql += ` ORDER BY SC.GioBatDau`;
+    // Nhớ order thêm theo Ngày chiếu để kết quả trả về không bị lộn xộn
+    sql += ` ORDER BY SC.NgayChieu ASC, SC.GioBatDau ASC`;
 
     return await query(sql, params);
 }

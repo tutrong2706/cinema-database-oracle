@@ -26,11 +26,15 @@ router.get('/revenue', authenticateToken, adminOnly, adminController.getRevenue)
 router.get('/revenue/movie', authenticateToken, adminOnly, adminController.getRevenueByMovie);
 router.get('/revenue/cinema', authenticateToken, adminOnly, adminController.getRevenueBycinema);
 router.get('/reports/top-movies', authenticateToken, adminOnly, adminController.getTopMovies);
+router.get('/revenue/combo', adminController.getComboRevenue);
+router.get('/revenue/combo-by-movie', adminController.getComboRevenueByMovie);
 
 // User and Admin management
 router.post('/create-admin', authenticateToken, adminOnly, adminController.createAdmin);
 router.patch('/users/:userId/role', authenticateToken, adminOnly, adminController.changeUserRole);
 router.get('/users', authenticateToken, adminOnly, adminController.getAllUsers);
 router.get('/users/count', authenticateToken, adminOnly, adminController.getUserStats);
+
+
 
 export default router;

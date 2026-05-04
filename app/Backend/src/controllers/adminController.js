@@ -319,18 +319,18 @@ export async function getUserStats(req, res) {
  * Query params: startDate, endDate
  */
 export async function getRevenueByMovie(req, res) {
+    console.log('🔴 [API] getRevenueByMovie called');
     try {
         const { startDate, endDate } = req.query;
+        console.log('   Params:', { startDate, endDate });
 
-        // Validate dates
-        if (!startDate || !endDate) {
-            return res.status(400).json(handleErrorResponse(400, 'startDate và endDate bắt buộc'));
-        }
+    
 
         const movieRevenue = await reportModel.getRevenueByMovie(startDate, endDate);
+        console.log('   ✅ Result:', movieRevenue?.length || 0, 'rows');
         return res.status(200).json(handleSuccessResponse(200, 'OK', movieRevenue));
     } catch (error) {
-        console.error('Revenue by Movie Error:', error);
+        console.error('❌ Revenue by Movie Error:', error.message);
         return res.status(500).json(handleErrorResponse(500, error.message));
     }
 }
@@ -343,11 +343,7 @@ export async function getRevenueBycinema(req, res) {
     try {
         const { startDate, endDate } = req.query;
 
-        // Validate dates
-        if (!startDate || !endDate) {
-            return res.status(400).json(handleErrorResponse(400, 'startDate và endDate bắt buộc'));
-        }
-
+    
         const cinemaRevenue = await reportModel.getRevenueBycinema(startDate, endDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', cinemaRevenue));
     } catch (error) {
@@ -368,6 +364,23 @@ export async function getTopMovies(req, res) {
         return res.status(200).json(handleSuccessResponse(200, 'OK', topMovies));
     } catch (error) {
         console.error('Top Movies Error:', error);
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+}
+export async function getComboRevenue(req, res) {
+    try {
+        const comboRevenue = await reportModel.getComboRevenue();
+        return res.status(200).json(handleSuccessResponse(200, 'OK', comboRevenue));
+    } catch (error) {
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+}
+
+export async function getComboRevenueByMovie(req, res) {
+    try {
+        const comboByMovie = await reportModel.getComboRevenueByMovie();
+        return res.status(200).json(handleSuccessResponse(200, 'OK', comboByMovie));
+    } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
     }
 }

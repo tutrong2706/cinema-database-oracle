@@ -2,6 +2,7 @@ import * as screeningModel from '../models/screeningModel.js';
 import * as ticketModel from '../models/ticketModel.js';
 import * as generalModel from '../models/generalModel.js';
 import * as orderModel from '../models/orderModel.js';
+import { execute } from '../config/database.js';
 import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
 
 /**
@@ -146,21 +147,27 @@ export async function createBooking(req, res) {
         // Tạo mã đơn hàng
         const maDonHang = `DH_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
+        const orderStatus = 'Chờ thanh toán';
+
         // Tạo đơn hàng
-        const orderStatus = isPayLater ? 'Chờ thanh toán' : 'Đã thanh toán';
         await orderModel.createOrder({
             MaDonHang: maDonHang,
             MaNguoiDung_KH: userId,
             PhuongThuc: 'Trực tuyến',
-            TongTien: totalPrice,
-            TrangThai: orderStatus
+            TongTien: totalPrice, // Để 0 cho Oracle tự tính
+            TrangThai: 'Chờ thanh toán' // BƯỚC 1: LUÔN ÉP CỨNG LÀ CHỜ THANH TOÁN
         });
 
         // Tạo vé cho mỗi ghế
         for (const ghe of DanhSachGhe) {
-            const maVe = `VE_${Date.now()}_${Math.random() * 10000}`;
+            // 🛠 SỬA TẠI ĐÂY: Đảm bảo sinh chuỗi ID hợp lệ và không quá 20 ký tự
+            const thoiGian = String(Date.now()).slice(-6); // Lấy 6 số cuối timestamp
+            const ngauNhien = Math.floor(Math.random() * 1000); // Thêm số ngẫu nhiên 3 chữ số
+            const maVe = `V${thoiGian}${ngauNhien}`; // Ví dụ: V84123456 (Tổng 10 ký tự, rất an toàn)
+
+            // Gọi Model để insert vào DB
             await ticketModel.createTicket({
-                MaVe: maVe,
+                MaVe: maVe, // Chắc chắn không NULL
                 MaSuatChieu: MaSuatChieu,
                 MaPhong: MaPhong,
                 HangGhe: ghe.HangGhe,
@@ -187,10 +194,19 @@ export async function createBooking(req, res) {
             }
         }
 
+        // BƯỚC 2: CÚ CHỐT HẠ KÍCH HOẠT TRIGGER
+        // Sau khi Insert xong hết, Oracle đã cộng đủ Tổng Tiền.
+        // Nếu khách KHÔNG chọn thanh toán sau (tức là thanh toán ngay) -> Gọi Update!
+        if (!isPayLater) {
+            // Lệnh Update này sẽ đánh thức toàn bộ Trigger: Cộng điểm, ghi lịch sử, đổi trạng thái vé!
+            await orderModel.updateOrderStatus(maDonHang, 'Đã thanh toán');
+        }
+
+        // Chỉnh lại response trả về cho đúng
+        const finalStatus = isPayLater ? 'Chờ thanh toán' : 'Đã thanh toán';
         return res.status(201).json(handleSuccessResponse(201, 'Tạo đơn hàng thành công', {
             MaDonHang: maDonHang,
-            TongTien: totalPrice,
-            TrangThai: orderStatus
+            TrangThai: finalStatus
         }));
     } catch (error) {
         console.error('❌ Error creating booking:', error);
@@ -199,7 +215,7 @@ export async function createBooking(req, res) {
 }
 
 /**
- * POST /orders/:id/pay - Thanh toán đơn hàng
+ * POST /orders/:id/pay - Thanh toán đơn hàng cũ (Từ tính năng Thanh Toán Sau)
  */
 export async function payOrder(req, res) {
     try {
@@ -212,19 +228,46 @@ export async function payOrder(req, res) {
         }
 
         if (order.TRANGTHAI === 'Đã thanh toán') {
-            return res.status(400).json(handleErrorResponse(400, 'Đơn hàng đã thanh toán'));
+            return res.status(400).json(handleErrorResponse(400, 'Đơn hàng đã được thanh toán rồi'));
         }
 
-        // Cập nhật trạng thái đơn hàng
+        // 1. Cập nhật trạng thái đơn hàng -> Đã thanh toán
         await orderModel.updateOrderStatus(id, 'Đã thanh toán');
 
-        // Cập nhật trạng thái vé liên quan
+        // 2. Cập nhật trạng thái các vé liên quan -> Đã thanh toán
         const ticketsOfOrder = await ticketModel.getTicketsByOrder(id);
         for (const ticket of ticketsOfOrder) {
             await ticketModel.updateTicketStatus(ticket.MAVE, 'Đã thanh toán');
         }
 
-        return res.status(200).json(handleSuccessResponse(200, 'Thanh toán thành công'));
+        // 3. GHI NHẬN LỊCH SỬ THANH TOÁN (Khắc phục lỗi mất đơn hàng ở báo cáo)
+        const maThanhToan = `TT_${String(Date.now()).slice(-6)}_${Math.floor(Math.random() * 1000)}`;
+        await execute(`
+            INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, PhuongThuc, TrangThai, SoTien)
+            VALUES (:1, :2, :3, 'Đã thanh toán', :4)
+        `, [maThanhToan, id, order.PHUONGTHUC || 'Trực tuyến', order.TONGTIEN]);
+
+        // 4. CỘNG ĐIỂM TÍCH LŨY (Tỉ lệ 10.000 VNĐ = 1 điểm)
+        const diemCong = Math.round((order.TONGTIEN || 0) / 10000);
+        await execute(`
+            UPDATE KHACH_HANG 
+            SET DiemTichLuy = NVL(DiemTichLuy, 0) + :1
+            WHERE MaNguoiDung = :2
+        `, [diemCong, order.MANGUOIDUNG]);
+        
+        // 5. TỰ ĐỘNG XÉT THĂNG HẠNG THÀNH VIÊN
+        await execute(`
+            UPDATE KHACH_HANG
+            SET LoaiThanhVien = CASE 
+                WHEN DiemTichLuy >= 1000 THEN 'Platinum'
+                WHEN DiemTichLuy >= 500  THEN 'Gold'
+                WHEN DiemTichLuy >= 200  THEN 'Silver'
+                ELSE 'Bronze'
+            END
+            WHERE MaNguoiDung = :1
+        `, [order.MANGUOIDUNG]);
+
+        return res.status(200).json(handleSuccessResponse(200, 'Thanh toán đơn hàng cũ thành công!'));
     } catch (error) {
         console.error('❌ Error paying order:', error);
         return res.status(500).json(handleErrorResponse(500, error.message));

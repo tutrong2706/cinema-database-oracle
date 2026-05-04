@@ -10,7 +10,7 @@ const BookingPage = () => {
     const [raps, setRaps] = useState([]);
     const [selectedRap, setSelectedRap] = useState('');
     // Đảm bảo NgayChieu là chuỗi YYYY-MM-DD
-    const [ngayChieu, setNgayChieu] = useState(new Date().toISOString().split('T')[0]); 
+    const [ngayChieu, setNgayChieu] = useState(''); 
     const [suatChieus, setSuatChieus] = useState([]);
     const [selectedSuat, setSelectedSuat] = useState(null);
     const [selectedSeats, setSelectedSeats] = useState([]);
@@ -33,7 +33,7 @@ const BookingPage = () => {
     // Fetch ghế đã đặt khi chọn suất chiếu
     useEffect(() => {
         if (selectedSuat) {
-            axiosClient.get(`/auth/suat-chieus/${selectedSuat.MaSuatChieu}/booked-seats`)
+            axiosClient.get(`/auth/suat-chieus/${selectedSuat.MASUATCHIEU}/booked-seats`)
                 .then(res => setBookedSeats(res.data.meta || []))
                 .catch(err => console.error(err));
         } else {
@@ -112,7 +112,7 @@ const BookingPage = () => {
             suatChieu: selectedSuat,
             seats: selectedSeats.sort((a, b) => a.HangGhe.localeCompare(b.HangGhe) || a.SoGhe - b.SoGhe),
             combos: Object.entries(selectedCombos).map(([maHang, qty]) => ({
-                ...combos.find(c => c.MaHang === maHang),
+                ...combos.find(c => c.MAHANG === maHang),
                 SoLuong: qty
             })),
             totalPrice: calculateTotal()
@@ -150,22 +150,27 @@ const BookingPage = () => {
                 </button>
             </div>
 
-            {/* Bước 2: Chọn Suất Chiếu (Hiển thị theo từng rạp) */}
+            {/* Bước 2: Chọn Suất Chiếu */}
             {suatChieus.length > 0 && (
                 <div className="mb-10 space-y-6">
                     {Object.entries(
                         suatChieus.reduce((acc, sc) => {
+                            // Nhóm theo cả NGÀY và RẠP
+                            const dateStr = sc.NGAYCHIEU ? new Date(sc.NGAYCHIEU).toLocaleDateString('vi-VN') : "";
                             const tenRap = sc.TENRAP || "Rạp";
-                            if (!acc[tenRap]) acc[tenRap] = [];
-                            acc[tenRap].push(sc);
+                            const groupKey = `📅 ${dateStr} - 🏢 ${tenRap}`; // Gộp thành 1 Key
+                            
+                            if (!acc[groupKey]) acc[groupKey] = [];
+                            acc[groupKey].push(sc);
                             return acc;
                         }, {})
-                    ).map(([tenRap, listSuat]) => (
-                        <div key={tenRap} className="!bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
-                            <h3 className="text-xl font-bold mb-4 text-white border-b border-gray-700 pb-2 flex items-center gap-2">
-                                <span className="text-[#00E5FF]">🎬</span> {tenRap}
+                    ).map(([groupKey, listSuat]) => (
+                        <div key={groupKey} className="!bg-gray-900 p-6 rounded-xl shadow-lg border border-gray-800">
+                            <h3 className="text-xl font-bold mb-4 text-[#00E5FF] border-b border-gray-700 pb-2">
+                                {groupKey}
                             </h3>
                             <div className="flex flex-wrap gap-4">
+                                {/* ... (Đoạn button hiển thị giờ giữ nguyên như cũ) ... */}
                                 {listSuat.map(sc => (
                                     <button
                                         key={sc.MASUATCHIEU}
@@ -205,7 +210,10 @@ const BookingPage = () => {
                                     const isSelected = selectedSeats.some(s => s.HangGhe === row && s.SoGhe === num);
                                     
                                     // Kiểm tra ghế đã bán từ API
-                                    const isSold = bookedSeats.some(s => s.HangGhe === row && s.SoGhe === num);
+                                    const isSold = bookedSeats.some(s => 
+                                        (s.HangGhe === row || s.HANGGHE === row) && 
+                                        (s.SoGhe === num || s.SOGHE === num)
+                                    );
 
                                     return (
                                         <button

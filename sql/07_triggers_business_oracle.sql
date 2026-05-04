@@ -220,3 +220,65 @@ BEGIN
     END IF;
 END TRG_PreventDeletePaidOrder;
 /
+
+CREATE OR REPLACE TRIGGER TRG_UPDATE_DIEMTICH_VA_HANG
+AFTER UPDATE OF TrangThai ON DON_HANG
+FOR EACH ROW
+WHEN (NEW.TrangThai = 'Đã thanh toán' AND OLD.TrangThai != 'Đã thanh toán')
+DECLARE
+    v_DiemHienTai KHACH_HANG.DiemTichLuy%TYPE;
+    v_DiemCongThem NUMBER;
+    v_DiemMoi NUMBER;
+    v_HangMoi KHACH_HANG.LoaiThanhVien%TYPE;
+BEGIN
+    -- 1. Tính điểm cộng thêm (10k = 1 điểm)
+    v_DiemCongThem := ROUND(:NEW.TongTien / 10000);
+
+    -- 2. Lấy điểm hiện tại của khách
+    SELECT NVL(DiemTichLuy, 0) INTO v_DiemHienTai
+    FROM KHACH_HANG
+    WHERE MaNguoiDung = :NEW.MaNguoiDung_KH;
+
+    v_DiemMoi := v_DiemHienTai + v_DiemCongThem;
+
+    -- 3. Xét duyệt Hạng thành viên mới
+    IF v_DiemMoi >= 1000 THEN
+        v_HangMoi := 'Platinum';
+    ELSIF v_DiemMoi >= 500 THEN
+        v_HangMoi := 'Gold';
+    ELSIF v_DiemMoi >= 200 THEN
+        v_HangMoi := 'Silver';
+    ELSE
+        v_HangMoi := 'Bronze';
+    END IF;
+
+    -- 4. Áp dụng Điểm và Hạng mới vào Database
+    UPDATE KHACH_HANG
+    SET DiemTichLuy = v_DiemMoi,
+        LoaiThanhVien = v_HangMoi
+    WHERE MaNguoiDung = :NEW.MaNguoiDung_KH;
+    
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        -- Đơn hàng này có thể của Admin (Không nằm trong bảng KHACH_HANG), bỏ qua không cộng điểm.
+        NULL;
+END;
+/
+CREATE OR REPLACE TRIGGER TRG_SYNC_DONHANG_VE
+AFTER UPDATE OF TrangThai ON DON_HANG
+FOR EACH ROW
+WHEN (NEW.TrangThai = 'Đã thanh toán' AND OLD.TrangThai != 'Đã thanh toán')
+BEGIN
+    -- 1. Cập nhật vé đồng bộ với đơn hàng
+    UPDATE VE_XEM_PHIM
+    SET TrangThai = 'Đã thanh toán'
+    WHERE MaDonHang = :NEW.MaDonHang;
+
+    -- 2. Tự động kiểm tra và tạo bản ghi THANH_TOAN nếu chưa có
+    -- Điều này giúp khớp báo cáo doanh thu ngay lập tức
+    INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien)
+    SELECT 'TT' || TO_CHAR(SYSDATE, 'JSSSSS'), :NEW.MaDonHang, SYSTIMESTAMP, :NEW.PhuongThuc, 'Đã thanh toán', :NEW.TongTien
+    FROM DUAL
+    WHERE NOT EXISTS (SELECT 1 FROM THANH_TOAN WHERE MaDonHang = :NEW.MaDonHang);
+END;
+/

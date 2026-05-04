@@ -42,20 +42,31 @@ export async function getMonthlyRevenue(year) {
  */
 export async function getRevenueByMovie(startDate, endDate) {
     const sql = `
-        SELECT P.MaPhim, P.TenPhim,
+        SELECT P.MaPhim AS MAPHIM, P.TenPhim AS TENPHIM,
                COUNT(DISTINCT V.MaVe) AS SOVE,
                SUM(V.GiaVeCuoi) AS DOANHTHU,
                ROUND(AVG(V.GiaVeCuoi), 2) AS GIAB_TRUNGBINH
         FROM VE_XEM_PHIM V
+        JOIN DON_HANG DH ON V.MaDonHang = DH.MaDonHang
         JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
         JOIN PHIM P ON SC.MaPhim = P.MaPhim
         WHERE V.TrangThai = 'Đã thanh toán'
-          AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
-          AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
+          AND (:1 IS NULL OR TRUNC(DH.ThoiGianDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(DH.ThoiGianDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY P.MaPhim, P.TenPhim
         ORDER BY DOANHTHU DESC
     `;
-    return await query(sql, [startDate || null, endDate || null]);
+    try {
+        console.log('🔍 getRevenueByMovie - Params:', { startDate, endDate });
+        // 4 bind values: :1, :1, :2, :2 (each placeholder used twice in WHERE clause)
+        const result = await query(sql, [startDate || null, startDate || null, endDate || null, endDate || null]);
+        console.log('✅ getRevenueByMovie - Result rows:', result?.length || 0);
+        return result;
+    } catch (error) {
+        console.error('❌ getRevenueByMovie - SQL Error:', error.message);
+        console.error('   SQL:', sql.substring(0, 200) + '...');
+        throw error;
+    }
 }
 
 /**
@@ -63,21 +74,32 @@ export async function getRevenueByMovie(startDate, endDate) {
  */
 export async function getRevenueBycinema(startDate, endDate) {
     const sql = `
-        SELECT RC.MaRapPhim, RC.Ten AS TENRAP,
+        SELECT RC.MaRapPhim AS MARAPHIM, RC.Ten AS TENRAP,
                COUNT(DISTINCT V.MaVe) AS SOVE,
                SUM(V.GiaVeCuoi) AS DOANHTHU,
                ROUND(AVG(V.GiaVeCuoi), 2) AS GIAB_TRUNGBINH
         FROM VE_XEM_PHIM V
+        JOIN DON_HANG DH ON V.MaDonHang = DH.MaDonHang
         JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
         JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
         JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
         WHERE V.TrangThai = 'Đã thanh toán'
-          AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
-          AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
+          AND (:1 IS NULL OR TRUNC(DH.ThoiGianDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(DH.ThoiGianDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY RC.MaRapPhim, RC.Ten
         ORDER BY DOANHTHU DESC
     `;
-    return await query(sql, [startDate || null, endDate || null]);
+    try {
+        console.log('🔍 getRevenueBycinema - Params:', { startDate, endDate });
+        // 4 bind values: :1, :1, :2, :2 (each placeholder used twice in WHERE clause)
+        const result = await query(sql, [startDate || null, startDate || null, endDate || null, endDate || null]);
+        console.log('✅ getRevenueBycinema - Result rows:', result?.length || 0);
+        return result;
+    } catch (error) {
+        console.error('❌ getRevenueBycinema - SQL Error:', error.message);
+        console.error('   SQL:', sql.substring(0, 200) + '...');
+        throw error;
+    }
 }
 
 /**
@@ -85,21 +107,30 @@ export async function getRevenueBycinema(startDate, endDate) {
  */
 export async function getPopularMovies(limit) {
     const sql = `
-        SELECT P.MaPhim, P.TenPhim,
-               COUNT(DISTINCT V.MaVe) AS SOVE,
-               SUM(V.GiaVeCuoi) AS DOANHTHU,
-               ROUND(AVG(DG.DiemSo), 1) AS DIEMDANHGIA
+        SELECT P.MaPhim AS MAPHIM, P.TenPhim AS TENPHIM,
+               NVL(V_STATS.SOVE, 0) AS SOVE,
+               NVL(V_STATS.DOANHTHU, 0) AS DOANHTHU,
+               NVL(DG_STATS.DIEMDANHGIA, 0) AS DIEMDANHGIA
         FROM PHIM P
-        LEFT JOIN SUAT_CHIEU SC ON P.MaPhim = SC.MaPhim
-        LEFT JOIN VE_XEM_PHIM V ON SC.MaSuatChieu = V.MaSuatChieu AND V.TrangThai = 'Đã thanh toán'
-        LEFT JOIN DANH_GIA DG ON P.MaPhim = DG.MaPhim
-        GROUP BY P.MaPhim, P.TenPhim
+        LEFT JOIN (
+            -- Tính số vé và doanh thu riêng
+            SELECT SC.MaPhim, COUNT(V.MaVe) AS SOVE, SUM(V.GiaVeCuoi) AS DOANHTHU
+            FROM SUAT_CHIEU SC
+            JOIN VE_XEM_PHIM V ON SC.MaSuatChieu = V.MaSuatChieu
+            WHERE V.TrangThai = 'Đã thanh toán'
+            GROUP BY SC.MaPhim
+        ) V_STATS ON P.MaPhim = V_STATS.MaPhim
+        LEFT JOIN (
+            -- Tính điểm đánh giá trung bình riêng
+            SELECT MaPhim, ROUND(AVG(DiemSo), 1) AS DIEMDANHGIA
+            FROM DANH_GIA
+            GROUP BY MaPhim
+        ) DG_STATS ON P.MaPhim = DG_STATS.MaPhim
         ORDER BY SOVE DESC, DOANHTHU DESC
         FETCH FIRST :1 ROWS ONLY
     `;
     return await query(sql, [limit || 10]);
 }
-
 /**
  * Lấy thống kê khách hàng
  */
@@ -185,4 +216,49 @@ export async function getRoomOccupancyRate(startDate, endDate) {
         ORDER BY TYLE_LAPDAY DESC
     `;
     return await query(sql, [startDate || null, endDate || null]);
+}
+/**
+ * Lấy doanh thu Bắp Nước (Tổng hợp từng món)
+ */
+export async function getComboRevenue() {
+    const sql = `
+        SELECT MH.MaHang AS MAHANG, MH.TenHang AS TENHANG,
+               SUM(G.SoLuong) AS TONG_SOLUONG,
+               SUM(G.SoLuong * G.DonGia) AS TONG_DOANHTHU
+        FROM GOM G
+        JOIN MAT_HANG MH ON G.MaHang = MH.MaHang
+        JOIN DON_HANG DH ON G.MaDonHang = DH.MaDonHang
+        WHERE DH.TrangThai = 'Đã thanh toán'
+        GROUP BY MH.MaHang, MH.TenHang
+        ORDER BY TONG_DOANHTHU DESC
+    `;
+    return await query(sql);
+}
+
+/**
+ * Lấy doanh thu Bắp Nước (Thống kê theo phim mà khách xem)
+ */
+export async function getComboRevenueByMovie() {
+    const sql = `
+        SELECT P.MaPhim AS MAPHIM, P.TenPhim AS TENPHIM,
+               SUM(DH_COMBO.TONG_SOLUONG) AS TONG_COMBO,
+               SUM(DH_COMBO.TONG_TIEN) AS TONG_DOANHTHU
+        FROM (
+            SELECT MaDonHang, MAX(MaSuatChieu) as MaSuatChieu
+            FROM VE_XEM_PHIM
+            GROUP BY MaDonHang
+        ) V_DH
+        JOIN (
+            SELECT MaDonHang, SUM(SoLuong) AS TONG_SOLUONG, SUM(SoLuong * DonGia) AS TONG_TIEN
+            FROM GOM
+            GROUP BY MaDonHang
+        ) DH_COMBO ON V_DH.MaDonHang = DH_COMBO.MaDonHang
+        JOIN SUAT_CHIEU SC ON V_DH.MaSuatChieu = SC.MaSuatChieu
+        JOIN PHIM P ON SC.MaPhim = P.MaPhim
+        JOIN DON_HANG DH ON V_DH.MaDonHang = DH.MaDonHang
+        WHERE DH.TrangThai = 'Đã thanh toán'
+        GROUP BY P.MaPhim, P.TenPhim
+        ORDER BY TONG_DOANHTHU DESC
+    `;
+    return await query(sql);
 }

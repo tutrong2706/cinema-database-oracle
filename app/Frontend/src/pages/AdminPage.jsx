@@ -135,16 +135,14 @@ const AdminPage = () => {
     
     const loadDetailedStats = async () => {
         try {
-            // Load detailed statistics from backend
-            const today = new Date().toISOString().split('T')[0];
-            const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
             
-            // Load both cinema revenue and movie revenue
+            
             const [movieRevRes, cinemaRevRes, topMoviesRes] = await Promise.all([
-                axiosClient.get(`/admin/revenue/movie?startDate=${startOfMonth}&endDate=${today}`).catch(() => ({ data: { meta: [] } })),
-                axiosClient.get(`/admin/revenue/cinema?startDate=${startOfMonth}&endDate=${today}`).catch(() => ({ data: { meta: [] } })),
+                // Gọi API không truyền ngày để lấy All-time
+                axiosClient.get(`/admin/revenue/movie`).catch(() => ({ data: { meta: [] } })),
+                axiosClient.get(`/admin/revenue/cinema`).catch(() => ({ data: { meta: [] } })),
                 axiosClient.get(`/admin/reports/top-movies?limit=5`).catch(() => ({ data: { meta: [] } }))
-            ]);
+        ]);
             
             console.log('Movie Revenue:', movieRevRes.data.meta);
             console.log('Cinema Revenue:', cinemaRevRes.data.meta);
@@ -340,7 +338,7 @@ const AdminPage = () => {
                                 : 'text-gray-400 hover:text-white'
                         }`}
                     >
-                        📈 Dashboard Doanh Thu
+                        📈 Đơn Hàng
                     </button>
                 </div>
 
@@ -532,8 +530,10 @@ const AdminPage = () => {
                             <div className="bg-gradient-to-br from-purple-900 to-purple-800 rounded-2xl p-6 border border-purple-700 shadow-2xl">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-300 text-sm mb-2">💰 Tổng Doanh Thu</p>
-                                        <p className="text-xl font-bold text-white">{(revenue?.TONGDOANHTHU ? parseInt(revenue.TONGDOANHTHU) / 1000000 : 0).toFixed(1)}M đ</p>
+                                        <p className="text-gray-300 text-sm mb-2">💰 Tổng tiền vé</p>
+                                        <p className="text-xl font-bold text-white">
+                                            {(detailedStats.movieRevenue?.reduce((sum, item) => sum + (parseInt(item.DOANHTHU) || 0), 0) / 1000000).toFixed(1)}M đ
+                                        </p>
                                     </div>
                                     <div className="text-4xl opacity-20">�</div>
                                 </div>

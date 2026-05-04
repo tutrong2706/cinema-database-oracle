@@ -5,7 +5,8 @@ import { authenticateToken } from '../middleware/authMiddleware.js';
 import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
 import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
-
+import { getMyOrders } from '../controllers/orderController.js';
+import { getOrderById } from '../controllers/orderController.js'
 const router = express.Router();
 
 /**
@@ -184,7 +185,8 @@ router.post('/booking', authenticateToken, bookingController.createBooking);
 
 // GET /auth/orders - Lấy đơn hàng của user
 router.get('/orders', authenticateToken, bookingController.getUserOrders);
-
+router.get('/orders', authenticateToken, getMyOrders);
+router.get('/orders/:id', authenticateToken, getOrderById);
 // GET /auth/orders/:id - Lấy chi tiết đơn hàng
 router.get('/orders/:id', authenticateToken, bookingController.getOrderDetail);
 
@@ -196,5 +198,7 @@ router.post('/orders/:id/cancel', authenticateToken, bookingController.cancelOrd
 
 // GET /auth/tickets - Lấy vé của user
 router.get('/tickets', authenticateToken, bookingController.getUserTickets);
+
+
 
 export default router;

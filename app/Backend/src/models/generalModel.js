@@ -39,10 +39,12 @@ export async function getComboById(maHang) {
  */
 export async function getAllOrders() {
     const sql = `
-        SELECT DH.MaDonHang, DH.MaNguoiDung_KH, DH.ThoiGianDat, DH.TongTien, DH.TrangThai,
-               KH.HoTen, KH.Email
+        SELECT DH.MaDonHang AS MADONHANG, DH.MaNguoiDung_KH AS MANGUOIDUNG, DH.PhuongThuc AS PHUONGTHUC,
+               DH.ThoiGianDat AS THOIGIANDAT, DH.TongTien AS TONGTIEN, DH.TrangThai AS TRANGTHAI,
+               TK.HoTen AS HOTEN, TK.Email AS EMAIL, TK.SDT
         FROM DON_HANG DH
-        JOIN KHACH_HANG KH ON DH.MaNguoiDung_KH = KH.MaNguoiDung
+        LEFT JOIN KHACH_HANG KH ON DH.MaNguoiDung_KH = KH.MaNguoiDung
+        LEFT JOIN TAI_KHOAN TK ON DH.MaNguoiDung_KH = TK.MaNguoiDung
         ORDER BY DH.ThoiGianDat DESC
     `;
     return await query(sql);
@@ -54,11 +56,11 @@ export async function getAllOrders() {
 export async function getOrdersByUser(maNguoiDung) {
     const sql = `
         SELECT 
-            DH.MaDonHang,
-            DH.ThoiGianDat,
-            DH.TongTien,
-            DH.TrangThai,
-            DH.MaNguoiDung_KH
+            DH.MaDonHang AS MADONHANG,
+            DH.ThoiGianDat AS THOIGIANDAT,
+            DH.TongTien AS TONGTIEN,
+            DH.TrangThai AS TRANGTHAI,
+            DH.MaNguoiDung_KH AS MANGUOIDUNG
         FROM DON_HANG DH
         WHERE DH.MaNguoiDung_KH = :1
         ORDER BY DH.ThoiGianDat DESC
@@ -67,17 +69,60 @@ export async function getOrdersByUser(maNguoiDung) {
 }
 
 /**
- * Lấy chi tiết đơn hàng
+ * Lấy chi tiết đơn hàng (đầy đủ: order + screening + tickets + combos)
  */
 export async function getOrderDetail(maDonHang) {
-    const sql = `
-        SELECT GOM.MaDonHang, GOM.MaHang, GOM.SoLuong, GOM.DonGia,
-               MH.TenHang AS TENHANG, MH.LoaiHang AS LOAIHANG
+    // Lấy thông tin đơn hàng + suất chiếu + phim + rạp
+    const orderSql = `
+        SELECT DH.MaDonHang AS MADONHANG, DH.MaNguoiDung_KH AS MANGUOIDUNG, 
+               DH.PhuongThuc AS PHUONGTHUC, DH.ThoiGianDat AS THOIGIANDAT, 
+               DH.TongTien AS TONGTIEN, DH.TrangThai AS TRANGTHAI,
+               TK.HoTen AS HOTEN, TK.Email AS EMAIL, TK.SDT,
+               SC.MaSuatChieu AS MASUATCHIEU, SC.GioBatDau AS GIOBATDAU, 
+               SC.GioKetThuc AS GIOKETHUC, SC.NgayChieu AS NGAYCHIEU, SC.MaPhong AS MAPHONG,
+               PH.TenPhim AS TENPHIM,
+               RC.TenRap AS TENRAP
+        FROM DON_HANG DH
+        JOIN KHACH_HANG KH ON DH.MaNguoiDung_KH = KH.MaNguoiDung
+        JOIN TAI_KHOAN TK ON KH.MaNguoiDung = TK.MaNguoiDung
+        JOIN VE_XEM_PHIM VE ON DH.MaDonHang = VE.MaDonHang
+        JOIN SUAT_CHIEU SC ON VE.MaSuatChieu = SC.MaSuatChieu
+        JOIN PHIM PH ON SC.MaPhim = PH.MaPhim
+        JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
+        JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
+        WHERE DH.MaDonHang = :1
+        FETCH FIRST 1 ROWS ONLY
+    `;
+    
+    const orderInfo = await query(orderSql, [maDonHang]);
+    if (orderInfo.length === 0) return null;
+    
+    const baseOrder = orderInfo[0];
+    
+    // Lấy danh sách vé
+    const ticketsSql = `
+        SELECT VE.MaVe AS MAVE, VE.HangGhe AS HANGGHE, VE.SoGhe AS SOGHE, 
+               VE.GiaVeCuoi AS GIAVEDUOI, VE.TrangThai AS TRANGTHAI
+        FROM VE_XEM_PHIM VE
+        WHERE VE.MaDonHang = :1
+    `;
+    const tickets = await query(ticketsSql, [maDonHang]);
+    
+    // Lấy danh sách combo
+    const combosSql = `
+        SELECT GOM.MaDonHang AS MADONHANG, GOM.MaHang AS MAHANG, GOM.SoLuong AS SOLUONG, 
+               GOM.DonGia AS DONGIA, MH.TenHang AS TENHANG, MH.LoaiHang AS LOAIHANG
         FROM GOM
         LEFT JOIN MAT_HANG MH ON GOM.MaHang = MH.MaHang
         WHERE GOM.MaDonHang = :1
     `;
-    return await query(sql, [maDonHang]);
+    const combos = await query(combosSql, [maDonHang]);
+    
+    return {
+        ...baseOrder,
+        seats: tickets,
+        combos: combos
+    };
 }
 
 /**
