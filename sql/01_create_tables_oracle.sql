@@ -5,12 +5,12 @@
 -- ============================================================================
 
 -- 1. Cấu hình môi trường
-SET DEFINE OFF;
-SET ECHO OFF;          -- Không nhắc lại câu lệnh đang chạy
-SET FEEDBACK OFF;      -- Không hiện thông báo "1 row created" hoặc "Table created"
-SET TERMOUT ON;        -- Vẫn hiện kết quả ra màn hình
-SET VERIFY OFF;        -- Không hiện chi tiết thay đổi biến &
-SET SERVEROUTPUT ON;   -- Bật để hiện thông báo từ DBMS_OUTPUT
+SET DEFINE OFF
+SET ECHO OFF          -- Không nhắc lại câu lệnh đang chạy
+SET FEEDBACK OFF      -- Không hiện thông báo "1 row created" hoặc "Table created"
+SET TERMOUT ON        -- Vẫn hiện kết quả ra màn hình
+SET VERIFY OFF        -- Không hiện chi tiết thay đổi biến &
+SET SERVEROUTPUT ON   -- Bật để hiện thông báo từ DBMS_OUTPUT
 -- kiểm tra bảng và index trước khi xóa
 
 
@@ -290,7 +290,7 @@ CREATE TABLE VE_XEM_PHIM (
     NgayDat TIMESTAMP DEFAULT SYSDATE NOT NULL,
     TrangThai VARCHAR2(20) NOT NULL,
     CONSTRAINT chk_ve_gia CHECK (GiaVeCuoi >= 0),
-    CONSTRAINT chk_ve_trangthai CHECK (TrangThai IN ('Đã đặt','Đã thanh toán','Hủy')),
+    CONSTRAINT chk_ve_trangthai CHECK (TrangThai IN ('Đã đặt','Đã thanh toán','Đã xem','Chờ thanh toán','Hủy')),
     CONSTRAINT fk_ve_sc FOREIGN KEY (MaSuatChieu) REFERENCES SUAT_CHIEU(MaSuatChieu) ON DELETE CASCADE,
     CONSTRAINT fk_ve_ghe FOREIGN KEY (MaPhong, HangGhe, SoGhe) REFERENCES GHE(MaPhong, HangGhe, SoGhe),
     CONSTRAINT fk_ve_kh FOREIGN KEY (MaNguoiDung_KH) REFERENCES KHACH_HANG(MaNguoiDung),

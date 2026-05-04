@@ -5,10 +5,13 @@ import axiosClient from '../api/axiosClient';
 const LoginPage = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError('');
+
         try {
             const res = await axiosClient.post('/auth/login', {
                 email: email,
@@ -20,20 +23,18 @@ const LoginPage = () => {
                 localStorage.setItem('token', res.data.meta.token);
                 localStorage.setItem('user', JSON.stringify(res.data.meta.userInfo));
                 
-                alert('Đăng nhập thành công!');
-                
                 // Auto-redirect Admin to AdminPage, customers to HomePage
                 const userInfo = res.data.meta.userInfo;
                 if (userInfo.vaiTro === 'Admin') {
-                    navigate('/admin');  // ✅ Admin auto-redirect to dashboard
+                    navigate('/admin');
                 } else {
-                    navigate('/');  // Customer go to home
+                    navigate('/');
                 }
             } else {
-                alert(res.data.message || 'Đăng nhập thất bại');
+                setError(res.data.message || 'Đăng nhập thất bại');
             }
         } catch (error) {
-            alert(error.response?.data?.message || 'Đăng nhập thất bại');
+            setError(error.response?.data?.message || 'Đăng nhập thất bại');
         }
     };
 
@@ -43,7 +44,12 @@ const LoginPage = () => {
                 onSubmit={handleLogin} 
                 className="bg-gray-900 p-10 rounded-xl shadow-[0_0_40px_rgba(0,229,255,0.1)] w-full max-w-sm border border-gray-800 transition-all duration-300 hover:shadow-[0_0_50px_rgba(0,229,255,0.2)]"
             >
-                <h2 className="text-3xl font-extrabold mb-8 text-center text-[#00E5FF]">ĐĂNG NHẬP</h2>
+                <h2 className="text-3xl font-extrabold mb-4 text-center text-[#00E5FF]">ĐĂNG NHẬP</h2>
+                {error && (
+                    <div className="mb-4 text-sm text-red-400 bg-red-950/30 border border-red-700 rounded-lg p-3">
+                        {error}
+                    </div>
+                )}
                 <div className="mb-5">
                     <label className="block text-gray-400 mb-2 text-sm font-medium">Email</label>
                     <input 

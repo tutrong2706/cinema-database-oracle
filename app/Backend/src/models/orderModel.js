@@ -134,11 +134,12 @@ export async function getRevenueByMovie(startDate, endDate) {
         JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
         JOIN PHIM P ON SC.MaPhim = P.MaPhim
         WHERE V.TrangThai = 'Đã thanh toán'
-          AND TRUNC(V.NgayDat) BETWEEN :1 AND :2
+          AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY P.MaPhim, P.TenPhim
         ORDER BY DOANHTHU DESC
     `;
-    return await query(sql, [startDate, endDate]);
+    return await query(sql, [startDate || null, endDate || null]);
 }
 
 /**
@@ -154,9 +155,10 @@ export async function getRevenueBycinema(startDate, endDate) {
         JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
         JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
         WHERE V.TrangThai = 'Đã thanh toán'
-          AND TRUNC(V.NgayDat) BETWEEN :1 AND :2
+          AND (:1 IS NULL OR TRUNC(V.NgayDat) >= TO_DATE(:1, 'YYYY-MM-DD'))
+          AND (:2 IS NULL OR TRUNC(V.NgayDat) <= TO_DATE(:2, 'YYYY-MM-DD'))
         GROUP BY RC.MaRapPhim, RC.Ten
         ORDER BY DOANHTHU DESC
     `;
-    return await query(sql, [startDate, endDate]);
+    return await query(sql, [startDate || null, endDate || null]);
 }

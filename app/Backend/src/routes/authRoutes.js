@@ -2,6 +2,9 @@ import express from 'express';
 import * as authController from '../controllers/authController.js';
 import * as bookingController from '../controllers/bookingController.js';
 import { authenticateToken } from '../middleware/authMiddleware.js';
+import jwt from 'jsonwebtoken';
+import { query } from '../config/database.js';
+import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
 
 const router = express.Router();
 
@@ -31,8 +34,79 @@ const router = express.Router();
 router.post('/login', authController.login);
 
 /**
- * @swagger
- * /auth/register:
+ * TEST ENDPOINTS - Mock login và kiểm tra DB
+ */
+router.post('/login-mock', (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        // Mock data
+        const mockUsers = {
+            'admin1': { userId: 'mock-admin', email: 'admin1', vaiTro: 'Admin' },
+            'user1': { userId: 'mock-user', email: 'user1', vaiTro: 'Khach' }
+        };
+
+        const user = mockUsers[email];
+        if (!user || password !== 'ad1') {
+            return res.status(401).json(handleErrorResponse(401, 'Email hoặc mật khẩu sai'));
+        }
+
+        const token = jwt.sign(
+            { userId: user.userId, email: user.email, vaiTro: user.vaiTro },
+            process.env.JWT_SECRET || 'secret123',
+            { expiresIn: '24h' }
+        );
+
+        return res.status(200).json(handleSuccessResponse(200, 'Mock login thành công', {
+            token,
+            userInfo: { userId: user.userId, email: user.email, vaiTro: user.vaiTro }
+        }));
+    } catch (error) {
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+});
+
+/**
+ * Kiểm tra kết nối database
+ */
+router.get('/db-test', async (req, res) => {
+    try {
+        const result = await query('SELECT * FROM TAI_KHOAN WHERE ROWNUM <= 1');
+        return res.status(200).json(handleSuccessResponse(200, 'Kết nối DB OK', {
+            dbConnected: true,
+            sampleData: result.length > 0 ? result[0] : 'Không có dữ liệu'
+        }));
+    } catch (error) {
+        return res.status(500).json(handleErrorResponse(500, `Lỗi kết nối DB: ${error.message}`));
+    }
+});
+
+/**
+ * Lấy tất cả admin accounts (for debug)
+ */
+router.get('/debug/admins', async (req, res) => {
+    try {
+        const result = await query(`SELECT MaNguoiDung, Email, VaiTro FROM TAI_KHOAN WHERE VaiTro = 'Admin'`);
+        return res.status(200).json(handleSuccessResponse(200, 'Admin accounts', result));
+    } catch (error) {
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+});
+
+/**
+ * Lấy tài khoản theo email (for debug)
+ */
+router.get('/debug/account/:email', async (req, res) => {
+    try {
+        const { email } = req.params;
+        const result = await query(`SELECT MaNguoiDung, HoTen, Email, MatKhau, VaiTro FROM TAI_KHOAN WHERE LOWER(Email) = LOWER(:1)`, [email]);
+        return res.status(200).json(handleSuccessResponse(200, 'Account info', result.length > 0 ? result[0] : 'Không tìm thấy'));
+    } catch (error) {
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+});
+
+/**
  *   post:
  *     summary: Đăng ký tài khoản
  *     tags: [Auth]

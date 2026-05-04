@@ -1,3 +1,4 @@
+-- Active: 1775405888174@@127.0.0.1@5432
 -- ============================================================================
 -- ORACLE DATABASE: CREATE USER AND GRANT PRIVILEGES
 -- Cinema Database Setup

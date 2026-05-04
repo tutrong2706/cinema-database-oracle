@@ -1,6 +1,6 @@
 -- ORACLE VERSION: Views and Data Access Procedures
 -- ============================================================================
-Set echo off;
+Set echo off
 -- VIEW 1: Get all movies with screening status
 CREATE OR REPLACE VIEW V_PHIM_FULL AS
 SELECT 

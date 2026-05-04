@@ -139,7 +139,8 @@ export async function getRevenueByDateRange(req, res) {
  */
 export async function getRevenueByMovie(req, res) {
     try {
-        const revenue = await orderModel.getRevenueByMovie();
+        const { fromDate, toDate } = req.query;
+        const revenue = await orderModel.getRevenueByMovie(fromDate, toDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', revenue));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
@@ -151,7 +152,8 @@ export async function getRevenueByMovie(req, res) {
  */
 export async function getRevenueBycinema(req, res) {
     try {
-        const revenue = await orderModel.getRevenueBycinema();
+        const { fromDate, toDate } = req.query;
+        const revenue = await orderModel.getRevenueBycinema(fromDate, toDate);
         return res.status(200).json(handleSuccessResponse(200, 'OK', revenue));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
