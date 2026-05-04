@@ -94,10 +94,10 @@ const BookingPage = () => {
     };
 
     const calculateTotal = () => {
-        const ticketTotal = selectedSeats.length * (selectedSuat?.GiaVeCoBan || 0);
+        const ticketTotal = selectedSeats.length * (selectedSuat?.GIAVECOBAN || 0);
         const comboTotal = Object.entries(selectedCombos).reduce((sum, [maHang, qty]) => {
-            const combo = combos.find(c => c.MaHang === maHang);
-            return sum + (combo ? Number(combo.DonGia) * qty : 0);
+            const combo = combos.find(c => c.MAHANG === maHang);
+            return sum + (combo ? Number(combo.DONGIA) * qty : 0);
         }, 0);
         return ticketTotal + comboTotal;
     };
@@ -134,7 +134,7 @@ const BookingPage = () => {
                     value={selectedRap}
                 >
                     <option value="" className="bg-gray-900">-- Chọn Rạp --</option>
-                    {raps.map(r => <option key={r.MaRapPhim} value={r.MaRapPhim} className="!bg-gray-900">{r.Ten}</option>)}
+                    {raps.map(r => <option key={r.MARAPHIM} value={r.MARAPHIM} className="!bg-gray-900">{r.TEN}</option>)}
                 </select>
                 <input 
                     type="date" 
@@ -155,7 +155,7 @@ const BookingPage = () => {
                 <div className="mb-10 space-y-6">
                     {Object.entries(
                         suatChieus.reduce((acc, sc) => {
-                            const tenRap = sc.phong_chieu?.rap_chieu_phim?.Ten || "Rạp";
+                            const tenRap = sc.TENRAP || "Rạp";
                             if (!acc[tenRap]) acc[tenRap] = [];
                             acc[tenRap].push(sc);
                             return acc;
@@ -168,15 +168,15 @@ const BookingPage = () => {
                             <div className="flex flex-wrap gap-4">
                                 {listSuat.map(sc => (
                                     <button
-                                        key={sc.MaSuatChieu}
+                                        key={sc.MASUATCHIEU}
                                         onClick={() => { setSelectedSuat(sc); setSelectedSeats([]); }}
                                         className={`px-5 py-2 rounded-lg font-semibold transition text-sm ${
-                                            selectedSuat?.MaSuatChieu === sc.MaSuatChieu 
+                                            selectedSuat?.MASUATCHIEU === sc.MASUATCHIEU 
                                             ? '!bg-green-600 text-white shadow-md shadow-green-600/40 border-green-600' 
                                             : '!bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-300'
                                         }`}
                                     >
-                                        {sc.GioBatDau.substring(0, 5)} - {sc.phong_chieu.Ten}
+                                        {new Date(sc.GIOBATDAU).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {sc.TENPHONG}
                                     </button>
                                 ))}
                             </div>
@@ -188,7 +188,7 @@ const BookingPage = () => {
             {/* Bước 3: Chọn Ghế (Chỉ hiện khi đã chọn suất) */}
             {selectedSuat && (
                 <div className="!bg-gray-900 p-8 rounded-xl text-center shadow-2xl border border-gray-800">
-                    <h3 className="text-xl font-bold mb-6 text-white">Sơ Đồ Ghế Ngồi: {selectedSuat.phong_chieu.Ten}</h3>
+                    <h3 className="text-xl font-bold mb-6 text-white">Sơ Đồ Ghế Ngồi: {selectedSuat.TENPHONG}</h3>
 
                     {/* Màn Hình */}
                     <div className="w-full !g-gray-700/50 text-gray-400 py-2 mb-10 rounded-t-xl border-b-4 border-gray-500 font-bold uppercase tracking-wider">
@@ -239,20 +239,20 @@ const BookingPage = () => {
                         <h3 className="text-xl font-bold mb-4 text-white text-left">🍿 Chọn Combo Bắp Nước</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {combos.map(combo => (
-                                <div key={combo.MaHang} className="!bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700">
+                                <div key={combo.MAHANG} className="!bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700">
                                     <div className="text-left">
-                                        <p className="font-bold text-white">{combo.TenHang}</p>
-                                        <p className="text-sm text-gray-400">{combo.MoTa}</p>
-                                        <p className="text-[#00E5FF] font-bold mt-1">{Number(combo.DonGia).toLocaleString()} VNĐ</p>
+                                        <p className="font-bold text-white">{combo.TENHANG}</p>
+                                        <p className="text-sm text-gray-400">{combo.MOTA}</p>
+                                        <p className="text-[#00E5FF] font-bold mt-1">{Number(combo.DONGIA).toLocaleString('vi-VN')} VNĐ</p>
                                     </div>
                                     <div className="flex items-center gap-3">
                                         <button 
-                                            onClick={() => handleComboChange(combo.MaHang, -1)}
+                                            onClick={() => handleComboChange(combo.MAHANG, -1)}
                                             className="w-8 h-8 rounded-full !bg-gray-700 text-white hover:bg-gray-600 flex items-center justify-center font-bold"
                                         >-</button>
-                                        <span className="text-white font-bold w-6 text-center">{selectedCombos[combo.MaHang] || 0}</span>
+                                        <span className="text-white font-bold w-6 text-center">{selectedCombos[combo.MAHANG] || 0}</span>
                                         <button 
-                                            onClick={() => handleComboChange(combo.MaHang, 1)}
+                                            onClick={() => handleComboChange(combo.MAHANG, 1)}
                                             className="w-8 h-8 rounded-full !bg-[#00E5FF] text-black hover:!bg-[#00cce6] flex items-center justify-center font-bold"
                                         >+</button>
                                     </div>
@@ -266,9 +266,9 @@ const BookingPage = () => {
                         <div className="text-left mb-4 sm:mb-0">
                             <p className="text-gray-300 text-sm">Ghế chọn: <span className="font-bold text-white">{selectedSeats.map(s => `${s.HangGhe}${s.SoGhe}`).join(', ') || "Chưa chọn"}</span></p>
                             <p className="text-xl font-extrabold text-[#00E5FF] mt-1">
-                                Tổng tiền: <span className="text-yellow-400">{calculateTotal().toLocaleString()} VNĐ</span>
+                                Tổng tiền: <span className="text-yellow-400">{calculateTotal().toLocaleString('vi-VN')} VNĐ</span>
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">Giá vé cơ bản: {selectedSuat.GiaVeCoBan.toLocaleString()} VNĐ/ghế</p>
+                            <p className="text-xs text-gray-500 mt-1">Giá vé cơ bản: {selectedSuat.GIAVECOBAN.toLocaleString('vi-VN')} VNĐ/ghế</p>
                         </div>
                         <button 
                             onClick={handleConfirm}

@@ -16,6 +16,7 @@ Hệ thống quản lý rạp chiếu phim toàn diện với:
 cd app/Backend
 npm install
 npm run dev  # Chạy trên port 3069
+cd app/backend ; npm run dev
 ```
 
 ### Frontend
@@ -23,13 +24,29 @@ npm run dev  # Chạy trên port 3069
 cd app/Frontend
 npm install
 npm run dev  # Chạy trên port 5173
+cd app/Frontend ; npm run dev
 ```
 
 ### Database
 ```bash
-cd sql
-sqlplus dev/dev123@XEPDB1
-@run_all_oracle.sql
+docker-compose up -d
+docker-compose down -v
+docker exec -it cinema-oracle-db sqlplus dev/dev123@//localhost:1521/XEPDB1
+@/docker-entrypoint-initdb.d/00_create_user_oracle.sql
+@/docker-entrypoint-initdb.d/01_create_tables_oracle.sql
+@/docker-entrypoint-initdb.d/02_insert_data_oracle.sql
+@/docker-entrypoint-initdb.d/03_sp_phim_oracle.sql
+@/docker-entrypoint-initdb.d/04_sp_donhang_oracle.sql
+@/docker-entrypoint-initdb.d/05_sp_ve_oracle.sql
+@/docker-entrypoint-initdb.d/06_functions_oracle.sql
+@/docker-entrypoint-initdb.d/07_triggers_business_oracle.sql
+@/docker-entrypoint-initdb.d/08_triggers_tongtien_oracle.sql
+@/docker-entrypoint-initdb.d/09_sp_view_data_oracle.sql
+@/docker-entrypoint-initdb.d/10_demo_script_oracle.sql
+@/docker-entrypoint-initdb.d/11_image_operations_oracle.sql
+@/docker-entrypoint-initdb.d/12_api_helper_procedures_oracle.sql
+@/docker-entrypoint-initdb.d/13_enhanced_views_sorting_oracle.sql
+@/docker-entrypoint-initdb.d/run_all_oracle.sql
 ```
 
 ---

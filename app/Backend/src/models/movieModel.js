@@ -73,9 +73,12 @@ export async function searchMovies(keyword) {
  */
 export async function createMovie(movieData) {
     const {
-        MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
+        TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
         DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh
     } = movieData;
+
+    // Auto-generate MaPhim (PHIM + timestamp)
+    const maPhim = `PHIM_${Date.now()}`;
 
     const sql = `
         INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
@@ -84,7 +87,7 @@ export async function createMovie(movieData) {
     `;
 
     return await execute(sql, [
-        MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
+        maPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
         DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh
     ]);
 }

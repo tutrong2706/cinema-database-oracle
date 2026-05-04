@@ -83,19 +83,22 @@ export async function getScreeningById(maSuatChieu) {
  */
 export async function createScreening(screeningData) {
     const {
-        MaSuatChieu, MaPhim, MaRapPhim, GiaVeCoBan, ThoiGianBatDau,
-        ThoiGianKetThuc, NgayChieu, TrangThai
+        MaPhim, MaPhong, GiaVeCoBan, GioBatDau,
+        GioKetThuc, NgayChieu, TrangThai
     } = screeningData;
 
+    // Auto-generate MaSuatChieu (SC + timestamp + random)
+    const maSuatChieu = `SC_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
     const sql = `
-        INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaRapPhim, GiaVeCoBan, ThoiGianBatDau,
-                               ThoiGianKetThuc, NgayChieu, TrangThai)
+        INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, GiaVeCoBan, GioBatDau,
+                               GioKetThuc, NgayChieu, TrangThai)
         VALUES (:1, :2, :3, :4, :5, :6, :7, :8)
     `;
 
     return await execute(sql, [
-        MaSuatChieu, MaPhim, MaRapPhim, GiaVeCoBan, ThoiGianBatDau,
-        ThoiGianKetThuc, NgayChieu, TrangThai || 'DangChieu'
+        maSuatChieu, MaPhim, MaPhong, GiaVeCoBan, GioBatDau,
+        GioKetThuc, NgayChieu, TrangThai || 'Đang mở'
     ]);
 }
 
@@ -103,15 +106,15 @@ export async function createScreening(screeningData) {
  * Cập nhật suất chiếu
  */
 export async function updateScreening(maSuatChieu, screeningData) {
-    const { GiaVeCoBan, ThoiGianBatDau, ThoiGianKetThuc, TrangThai } = screeningData;
+    const { GiaVeCoBan, GioBatDau, GioKetThuc, TrangThai } = screeningData;
 
     const sql = `
         UPDATE SUAT_CHIEU
-        SET GiaVeCoBan = :1, ThoiGianBatDau = :2, ThoiGianKetThuc = :3, TrangThai = :4
+        SET GiaVeCoBan = :1, GioBatDau = :2, GioKetThuc = :3, TrangThai = :4
         WHERE MaSuatChieu = :5
     `;
 
-    return await execute(sql, [GiaVeCoBan, ThoiGianBatDau, ThoiGianKetThuc, TrangThai, maSuatChieu]);
+    return await execute(sql, [GiaVeCoBan, GioBatDau, GioKetThuc, TrangThai, maSuatChieu]);
 }
 
 /**

@@ -41,7 +41,6 @@ PROMPT ============= [02B] Inserting Balanced Screenings =============
 -- @@18_seed_purchase_test_data_oracle.sql
 PROMPT ============= [02D] Inserting Showtimes Top-Up (5-6 per movie) =============
 @@19_seed_massive_showtimes_oracle.sql
-
 -- 3. Create stored procedures for movie management
 PROMPT ============= [03] Creating Movie Management Procedures =============
 @@03_sp_phim_oracle.sql

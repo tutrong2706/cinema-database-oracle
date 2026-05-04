@@ -107,3 +107,15 @@ export async function seatExists(maSuatChieu, hangGhe, soGhe) {
     const results = await query(sql, [maSuatChieu, hangGhe, soGhe]);
     return results[0].CNT > 0;
 }
+
+/**
+ * Lấy vé theo mã đơn hàng
+ */
+export async function getTicketsByOrder(maDonHang) {
+    const sql = `
+        SELECT V.MaVe as MAVE, V.MaSuatChieu, V.HangGhe, V.SoGhe, V.GiaVeCuoi, V.TrangThai
+        FROM VE_XEM_PHIM V
+        WHERE V.MaDonHang = :1
+    `;
+    return await query(sql, [maDonHang]);
+}

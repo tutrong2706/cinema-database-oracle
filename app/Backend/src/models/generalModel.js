@@ -4,7 +4,7 @@ import { query, execute } from '../config/database.js';
  * Lấy danh sách rạp
  */
 export async function getAllCinemas() {
-    const sql = `SELECT MaRapPhim AS MARAPHIM, Ten AS TENRAP, DiaChi AS DIACHI, SDT AS SODIENTHOAI FROM RAP_CHIEU_PHIM ORDER BY Ten`;
+    const sql = `SELECT MaRapPhim AS MARAPHIM, Ten AS TEN, ThanhPho AS THANHPHO, DiaChi AS DIACHI, SDT AS SODIENTHOAI FROM RAP_CHIEU_PHIM ORDER BY Ten`;
     return await query(sql);
 }
 
@@ -12,7 +12,7 @@ export async function getAllCinemas() {
  * Lấy rạp theo ID
  */
 export async function getCinemaById(maRap) {
-    const sql = `SELECT MaRapPhim AS MARAPHIM, Ten AS TENRAP, DiaChi AS DIACHI, SDT AS SODIENTHOAI FROM RAP_CHIEU_PHIM WHERE MaRapPhim = :1`;
+    const sql = `SELECT MaRapPhim AS MARAPHIM, Ten AS TEN, ThanhPho AS THANHPHO, DiaChi AS DIACHI, SDT AS SODIENTHOAI FROM RAP_CHIEU_PHIM WHERE MaRapPhim = :1`;
     const results = await query(sql, [maRap]);
     return results.length > 0 ? results[0] : null;
 }
@@ -21,7 +21,7 @@ export async function getCinemaById(maRap) {
  * Lấy danh sách combo
  */
 export async function getAllCombos() {
-    const sql = `SELECT MaHang AS MAHANG, TenHang AS TENHANG, DonGia AS DONGIA, MoTa AS MOTA FROM HANG_HANG ORDER BY TenHang`;
+    const sql = `SELECT MaHang AS MAHANG, TenHang AS TENHANG, DonGia AS DONGIA, MoTa AS MOTA FROM MAT_HANG ORDER BY TenHang`;
     return await query(sql);
 }
 
@@ -29,7 +29,7 @@ export async function getAllCombos() {
  * Lấy combo theo ID
  */
 export async function getComboById(maHang) {
-    const sql = `SELECT MaHang AS MAHANG, TenHang AS TENHANG, DonGia AS DONGIA, MoTa AS MOTA FROM HANG_HANG WHERE MaHang = :1`;
+    const sql = `SELECT MaHang AS MAHANG, TenHang AS TENHANG, DonGia AS DONGIA, MoTa AS MOTA FROM MAT_HANG WHERE MaHang = :1`;
     const results = await query(sql, [maHang]);
     return results.length > 0 ? results[0] : null;
 }
@@ -71,12 +71,11 @@ export async function getOrdersByUser(maNguoiDung) {
  */
 export async function getOrderDetail(maDonHang) {
     const sql = `
-        SELECT CT.MaCT, CT.MaVe, CT.MaHang, CT.SoLuong, CT.DonGia, CT.ThanhTien,
-               V.HangGhe, V.SoGhe, HH.TenHang
-        FROM CHI_TIET_DON_HANG CT
-        LEFT JOIN VE V ON CT.MaVe = V.MaVe
-        LEFT JOIN HANG_HANG HH ON CT.MaHang = HH.MaHang
-        WHERE CT.MaDonHang = :1
+        SELECT GOM.MaDonHang, GOM.MaHang, GOM.SoLuong, GOM.DonGia,
+               MH.TenHang AS TENHANG, MH.LoaiHang AS LOAIHANG
+        FROM GOM
+        LEFT JOIN MAT_HANG MH ON GOM.MaHang = MH.MaHang
+        WHERE GOM.MaDonHang = :1
     `;
     return await query(sql, [maDonHang]);
 }
@@ -122,20 +121,20 @@ export async function updateOrderStatus(maDonHang, trangThai) {
  */
 export async function getRevenue(startDate = null, endDate = null) {
     let sql = `
-        SELECT SUM(TongTien) as TongDoanhThu, COUNT(*) as SoDonHang
+        SELECT SUM(TongTien) AS TONGDOANHTHU, COUNT(*) AS SODONHANG
         FROM DON_HANG
-        WHERE TrangThai = 'DaThanhToan'
+        WHERE TrangThai = 'Đã thanh toán'
     `;
 
     const params = [];
 
     if (startDate) {
-        sql += ` AND NgayLap >= TO_DATE(:${params.length + 1}, 'YYYY-MM-DD')`;
+        sql += ` AND ThoiGianDat >= TO_DATE(:${params.length + 1}, 'YYYY-MM-DD')`;
         params.push(startDate);
     }
 
     if (endDate) {
-        sql += ` AND NgayLap <= TO_DATE(:${params.length + 1}, 'YYYY-MM-DD')`;
+        sql += ` AND ThoiGianDat <= TO_DATE(:${params.length + 1}, 'YYYY-MM-DD')`;
         params.push(endDate);
     }
 

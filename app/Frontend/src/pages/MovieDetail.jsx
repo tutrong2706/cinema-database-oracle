@@ -79,7 +79,7 @@ const MovieDetail = () => {
                                             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-[#00E5FF] to-blue-600 flex items-center justify-center text-xs font-bold text-black">👤</div>
                                             <span className="font-bold text-gray-300">Khán giả</span>
                                         </div>
-                                        <span className="text-gray-500 text-xs">{new Date(dg.NGAYDAG).toLocaleDateString('vi-VN')}</span>
+                                        <span className="text-gray-500 text-xs">{new Date(dg.NGAYDAN).toLocaleDateString('vi-VN')}</span>
                                     </div>
                                     <div className="flex items-center gap-1 mb-2">
                                         {[...Array(10)].map((_, i) => (

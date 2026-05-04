@@ -2,6 +2,7 @@ import * as movieModel from '../models/movieModel.js';
 import * as screeningModel from '../models/screeningModel.js';
 import * as generalModel from '../models/generalModel.js';
 import * as accountModel from '../models/accountModel.js';
+import * as reportModel from '../models/reportModel.js';
 import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
 
 /**
@@ -31,9 +32,9 @@ export async function createMovie(req, res) {
     try {
         const movieData = req.body;
 
-        // Validate
-        if (!movieData.MaPhim || !movieData.TenPhim) {
-            return res.status(400).json(handleErrorResponse(400, 'MaPhim và TenPhim bắt buộc'));
+        // Validate (MaPhim will be auto-generated)
+        if (!movieData.TenPhim) {
+            return res.status(400).json(handleErrorResponse(400, 'TenPhim bắt buộc'));
         }
 
         await movieModel.createMovie(movieData);
@@ -101,8 +102,9 @@ export async function createScreening(req, res) {
     try {
         const screeningData = req.body;
 
-        if (!screeningData.MaSuatChieu || !screeningData.MaPhim) {
-            return res.status(400).json(handleErrorResponse(400, 'Thông tin bắt buộc không đủ'));
+        // Validate required fields (MaSuatChieu will be auto-generated)
+        if (!screeningData.MaPhim || !screeningData.MaPhong) {
+            return res.status(400).json(handleErrorResponse(400, 'MaPhim và MaPhong bắt buộc'));
         }
 
         await screeningModel.createScreening(screeningData);
@@ -308,6 +310,64 @@ export async function getUserStats(req, res) {
         return res.status(200).json(handleSuccessResponse(200, 'Thống kê người dùng', stats));
     } catch (error) {
         console.error('Get Stats Error:', error);
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+}
+
+/**
+ * GET /admin/revenue/movie - Lấy doanh thu theo phim
+ * Query params: startDate, endDate
+ */
+export async function getRevenueByMovie(req, res) {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // Validate dates
+        if (!startDate || !endDate) {
+            return res.status(400).json(handleErrorResponse(400, 'startDate và endDate bắt buộc'));
+        }
+
+        const movieRevenue = await reportModel.getRevenueByMovie(startDate, endDate);
+        return res.status(200).json(handleSuccessResponse(200, 'OK', movieRevenue));
+    } catch (error) {
+        console.error('Revenue by Movie Error:', error);
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+}
+
+/**
+ * GET /admin/revenue/cinema - Lấy doanh thu theo rạp
+ * Query params: startDate, endDate
+ */
+export async function getRevenueBycinema(req, res) {
+    try {
+        const { startDate, endDate } = req.query;
+
+        // Validate dates
+        if (!startDate || !endDate) {
+            return res.status(400).json(handleErrorResponse(400, 'startDate và endDate bắt buộc'));
+        }
+
+        const cinemaRevenue = await reportModel.getRevenueBycinema(startDate, endDate);
+        return res.status(200).json(handleSuccessResponse(200, 'OK', cinemaRevenue));
+    } catch (error) {
+        console.error('Revenue by Cinema Error:', error);
+        return res.status(500).json(handleErrorResponse(500, error.message));
+    }
+}
+
+/**
+ * GET /admin/reports/top-movies - Lấy top phim phổ biến
+ * Query params: limit (default 10)
+ */
+export async function getTopMovies(req, res) {
+    try {
+        const { limit = 10 } = req.query;
+
+        const topMovies = await reportModel.getPopularMovies(parseInt(limit));
+        return res.status(200).json(handleSuccessResponse(200, 'OK', topMovies));
+    } catch (error) {
+        console.error('Top Movies Error:', error);
         return res.status(500).json(handleErrorResponse(500, error.message));
     }
 }
