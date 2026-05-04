@@ -148,3 +148,8 @@ BEGIN
         TenHang,
         DonGia,
         LoaiHang,
+        MoTa
+    FROM MAT_HANG
+    WHERE LoaiHang IN ('Combo', 'DoAnNhanh')
+    ORDER BY DonGia;
+END SP_GetCombos;

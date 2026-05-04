@@ -1,0 +1,151 @@
+SQL> 
+SQL> PROMPT ========================================================================
+========================================================================
+SQL> PROMPT          CINEMA DATABASE - ORACLE MIGRATION COMPLETE
+CINEMA DATABASE - ORACLE MIGRATION COMPLETE
+SQL> PROMPT ========================================================================
+========================================================================
+SQL> 
+SQL> -- 0. Create user and grant privileges
+SQL> -- PROMPT ============= [00] Creating User and Granting Privileges =============
+SQL> -- @/docker-entrypoint-initdb.d/00_create_user_oracle.sql
+SQL> 
+SQL> -- 1. Create all tables
+SQL> PROMPT ============= [01] Creating Tables =============
+============= [01] Creating Tables =============
+SQL> @/docker-entrypoint-initdb.d/01_create_tables_oracle.sql
+
+Error starting at line : 25 in command -
+@/docker-entrypoint-initdb.d/01_create_tables_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/01_create_tables_oracle.sql"
+Elapsed: 00:00:00.014
+SQL> 
+SQL> -- 2. Insert initial data
+SQL> PROMPT ============= [02] Inserting Sample Data =============
+============= [02] Inserting Sample Data =============
+SQL> @/docker-entrypoint-initdb.d/02_insert_data_oracle.sql
+
+Error starting at line : 29 in command -
+@/docker-entrypoint-initdb.d/02_insert_data_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/02_insert_data_oracle.sql"
+Elapsed: 00:00:00.012
+SQL> 
+SQL> -- 3. Create stored procedures for movie management
+SQL> PROMPT ============= [03] Creating Movie Management Procedures =============
+============= [03] Creating Movie Management Procedures =============
+SQL> @/docker-entrypoint-initdb.d/03_sp_phim_oracle.sql
+
+Error starting at line : 33 in command -
+@/docker-entrypoint-initdb.d/03_sp_phim_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/03_sp_phim_oracle.sql"
+Elapsed: 00:00:00.015
+SQL> 
+SQL> -- 4. Create stored procedures for order management
+SQL> PROMPT ============= [04] Creating Order Management Procedures =============
+============= [04] Creating Order Management Procedures =============
+SQL> @/docker-entrypoint-initdb.d/04_sp_donhang_oracle.sql
+
+Error starting at line : 37 in command -
+@/docker-entrypoint-initdb.d/04_sp_donhang_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/04_sp_donhang_oracle.sql"
+Elapsed: 00:00:00.014
+SQL> 
+SQL> -- 5. Create stored procedures for ticket management
+SQL> PROMPT ============= [05] Creating Ticket Management Procedures =============
+============= [05] Creating Ticket Management Procedures =============
+SQL> @/docker-entrypoint-initdb.d/05_sp_ve_oracle.sql
+
+Error starting at line : 41 in command -
+@/docker-entrypoint-initdb.d/05_sp_ve_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/05_sp_ve_oracle.sql"
+Elapsed: 00:00:00.012
+SQL> 
+SQL> -- 6. Create functions
+SQL> PROMPT ============= [06] Creating Functions =============
+============= [06] Creating Functions =============
+SQL> @/docker-entrypoint-initdb.d/06_functions_oracle.sql
+
+Error starting at line : 45 in command -
+@/docker-entrypoint-initdb.d/06_functions_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/06_functions_oracle.sql"
+Elapsed: 00:00:00.013
+SQL> 
+SQL> -- 7. Create business logic triggers
+SQL> PROMPT ============= [07] Creating Business Logic Triggers =============
+============= [07] Creating Business Logic Triggers =============
+SQL> @/docker-entrypoint-initdb.d/07_triggers_business_oracle.sql
+
+Error starting at line : 49 in command -
+@/docker-entrypoint-initdb.d/07_triggers_business_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/07_triggers_business_oracle.sql"
+Elapsed: 00:00:00.011
+SQL> 
+SQL> -- 8. Create order total calculation triggers
+SQL> PROMPT ============= [08] Creating Order Total Calculation Triggers =============
+============= [08] Creating Order Total Calculation Triggers =============
+SQL> @/docker-entrypoint-initdb.d/08_triggers_tongtien_oracle.sql
+
+Error starting at line : 53 in command -
+@/docker-entrypoint-initdb.d/08_triggers_tongtien_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/08_triggers_tongtien_oracle.sql"
+Elapsed: 00:00:00.013
+SQL> 
+SQL> -- 9. Create views and data access procedures
+SQL> PROMPT ============= [09] Creating Views and Data Access Procedures =============
+============= [09] Creating Views and Data Access Procedures =============
+SQL> @/docker-entrypoint-initdb.d/09_sp_view_data_oracle.sql
+
+Error starting at line : 57 in command -
+@/docker-entrypoint-initdb.d/09_sp_view_data_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/09_sp_view_data_oracle.sql"
+Elapsed: 00:00:00.014
+SQL> 
+SQL> -- 10. Run demo script (sample operations)
+SQL> --PROMPT ============= [10] Running Demo Script =============
+SQL> --@/docker-entrypoint-initdb.d/10_demo_script_oracle.sql
+SQL> 
+SQL> -- 11. Create image management features
+SQL> PROMPT ============= [11] Creating Image Management System =============
+============= [11] Creating Image Management System =============
+SQL> @/docker-entrypoint-initdb.d/11_image_operations_oracle.sql
+
+Error starting at line : 65 in command -
+@/docker-entrypoint-initdb.d/11_image_operations_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/11_image_operations_oracle.sql"
+Elapsed: 00:00:00.015
+SQL> 
+SQL> -- 12. Create API helper procedures
+SQL> PROMPT ============= [12] Creating API Helper Procedures =============
+============= [12] Creating API Helper Procedures =============
+SQL> @/docker-entrypoint-initdb.d/12_api_helper_procedures_oracle.sql
+
+Error starting at line : 69 in command -
+@/docker-entrypoint-initdb.d/12_api_helper_procedures_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/12_api_helper_procedures_oracle.sql"
+Elapsed: 00:00:00.013
+SQL> 
+SQL> -- 13. Create enhanced views with flexible sorting
+SQL> PROMPT ============= [13] Creating Enhanced Views with Sorting =============
+============= [13] Creating Enhanced Views with Sorting =============
+SQL> @/docker-entrypoint-initdb.d/13_enhanced_views_sorting_oracle.sql
+
+Error starting at line : 73 in command -
+@/docker-entrypoint-initdb.d/13_enhanced_views_sorting_oracle.sql
+Error report -
+SP2-0310: Unable to open file: "/docker-entrypoint-initdb.d/13_enhanced_views_sorting_oracle.sql"
+Elapsed: 00:00:00.014
+SQL> 
+SQL> PROMPT ============= DATABASE MIGRATION COMPLETE! =============
+============= DATABASE MIGRATION COMPLETE! =============
+SQL> SPOOL OFF;

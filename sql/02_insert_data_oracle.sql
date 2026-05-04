@@ -168,21 +168,17 @@ FROM (SELECT 'B' hang FROM DUAL UNION ALL SELECT 'E' FROM DUAL),
 COMMIT;
 
 -- P003: 150 ghế (hàng A-G: 70 × Thường; hàng H-I: 20 × Đôi; hàng J-K: 20 × VIP)
--- P003: 150 ghế (hàng A-G: 70 × Thường; hàng H-I: 20 × Đôi; hàng J-K: 20 × VIP)
 INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'Thường'
 FROM (SELECT 'A' hang FROM DUAL UNION ALL SELECT 'B' FROM DUAL UNION ALL SELECT 'C' FROM DUAL 
       UNION ALL SELECT 'D' FROM DUAL UNION ALL SELECT 'E' FROM DUAL UNION ALL SELECT 'F' FROM DUAL UNION ALL SELECT 'G' FROM DUAL),
      (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
-
 INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'Đôi'
 FROM (SELECT 'H' hang FROM DUAL UNION ALL SELECT 'I' FROM DUAL),
      (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
-
 INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) SELECT 'P003', hang, stt, 'VIP'
 FROM (SELECT 'J' hang FROM DUAL UNION ALL SELECT 'K' FROM DUAL),
      (SELECT ROWNUM stt FROM DUAL CONNECT BY ROWNUM <= 10);
-
--- Lưu ý: Không còn dòng "FOR stt IN 1..10 LOOP" ở đây nữa
+    FOR stt IN 1..10 LOOP
 
 COMMIT;
 
@@ -474,6 +470,323 @@ INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioK
 
 COMMIT;
 
+-- ========== DỮ LIỆU BỔ SUNG DEMO TRANSACTION (MỨC VỪA) ==========
+-- Dọn dữ liệu demo cũ để block này có thể chạy lại nhiều lần
+DELETE FROM AP_DUNG WHERE MaVe BETWEEN 'VE101' AND 'VE124';
+DELETE FROM VE_XEM_PHIM WHERE MaVe BETWEEN 'VE101' AND 'VE124';
+DELETE FROM GOM WHERE MaDonHang BETWEEN 'DH101' AND 'DH124';
+DELETE FROM THANH_TOAN WHERE MaThanhToan BETWEEN 'TT101' AND 'TT124';
+DELETE FROM DON_HANG WHERE MaDonHang BETWEEN 'DH101' AND 'DH124';
+
+COMMIT;
+
+-- ========== ĐƠN HÀNG BỔ SUNG ==========
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH101', 'KH001', 'Online', TO_TIMESTAMP('2026-01-02 09:15:00', 'YYYY-MM-DD HH24:MI:SS'), 165000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH102', 'KH002', 'App', TO_TIMESTAMP('2026-01-02 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), 130000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH103', 'KH003', 'Web', TO_TIMESTAMP('2026-01-02 10:40:00', 'YYYY-MM-DD HH24:MI:SS'), 220000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH104', 'KH004', 'Tại quầy', TO_TIMESTAMP('2026-01-03 08:30:00', 'YYYY-MM-DD HH24:MI:SS'), 175000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH105', 'KH005', 'Online', TO_TIMESTAMP('2026-01-03 09:20:00', 'YYYY-MM-DD HH24:MI:SS'), 140000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH106', 'KH006', 'App', TO_TIMESTAMP('2026-01-03 10:10:00', 'YYYY-MM-DD HH24:MI:SS'), 210000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH107', 'KH007', 'Web', TO_TIMESTAMP('2026-01-03 11:00:00', 'YYYY-MM-DD HH24:MI:SS'), 270000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH108', 'KH008', 'Online', TO_TIMESTAMP('2026-01-04 08:45:00', 'YYYY-MM-DD HH24:MI:SS'), 300000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH109', 'KH009', 'Tại quầy', TO_TIMESTAMP('2026-01-04 09:30:00', 'YYYY-MM-DD HH24:MI:SS'), 175000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH110', 'KH010', 'App', TO_TIMESTAMP('2026-01-04 10:15:00', 'YYYY-MM-DD HH24:MI:SS'), 130000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH111', 'KH011', 'Online', TO_TIMESTAMP('2026-01-05 08:20:00', 'YYYY-MM-DD HH24:MI:SS'), 220000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH112', 'KH012', 'Web', TO_TIMESTAMP('2026-01-05 09:10:00', 'YYYY-MM-DD HH24:MI:SS'), 165000, 'Đã thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH113', 'KH013', 'Online', TO_TIMESTAMP('2026-01-06 10:00:00', 'YYYY-MM-DD HH24:MI:SS'), 270000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH114', 'KH014', 'App', TO_TIMESTAMP('2026-01-06 10:40:00', 'YYYY-MM-DD HH24:MI:SS'), 175000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH115', 'KH015', 'Web', TO_TIMESTAMP('2026-01-06 11:20:00', 'YYYY-MM-DD HH24:MI:SS'), 140000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH116', 'KH016', 'Tại quầy', TO_TIMESTAMP('2026-01-07 08:10:00', 'YYYY-MM-DD HH24:MI:SS'), 210000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH117', 'KH017', 'Online', TO_TIMESTAMP('2026-01-07 08:55:00', 'YYYY-MM-DD HH24:MI:SS'), 300000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH118', 'KH018', 'App', TO_TIMESTAMP('2026-01-07 09:35:00', 'YYYY-MM-DD HH24:MI:SS'), 130000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH119', 'KH019', 'Web', TO_TIMESTAMP('2026-01-08 10:05:00', 'YYYY-MM-DD HH24:MI:SS'), 220000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH120', 'KH020', 'Tại quầy', TO_TIMESTAMP('2026-01-08 10:50:00', 'YYYY-MM-DD HH24:MI:SS'), 165000, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH121', 'KH001', 'Online', TO_TIMESTAMP('2026-01-09 09:25:00', 'YYYY-MM-DD HH24:MI:SS'), 140000, 'Hủy');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH122', 'KH002', 'App', TO_TIMESTAMP('2026-01-09 10:15:00', 'YYYY-MM-DD HH24:MI:SS'), 175000, 'Hủy');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH123', 'KH003', 'Web', TO_TIMESTAMP('2026-01-09 11:05:00', 'YYYY-MM-DD HH24:MI:SS'), 210000, 'Hủy');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES
+('DH124', 'KH004', 'Tại quầy', TO_TIMESTAMP('2026-01-10 08:40:00', 'YYYY-MM-DD HH24:MI:SS'), 270000, 'Hủy');
+
+COMMIT;
+
+-- ========== GỒM BỔ SUNG ==========
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH101','MH001',1,45000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH102','MH002',1,30000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH103','MH003',1,70000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH104','MH006',1,55000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH105','MH007',1,40000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH106','MH004',1,60000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH107','MH008',1,150000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH108','MH005',1,200000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH109','MH006',1,55000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH110','MH002',1,30000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH111','MH003',1,70000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH112','MH001',1,45000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH113','MH008',1,150000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH114','MH006',1,55000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH115','MH007',1,40000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH116','MH004',1,60000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH117','MH005',1,200000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH118','MH002',1,30000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH119','MH003',1,70000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH120','MH001',1,45000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH121','MH007',1,40000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH122','MH006',1,55000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH123','MH004',1,60000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH124','MH008',1,150000);
+
+COMMIT;
+
+-- ========== VÉ XEM PHIM BỔ SUNG ==========
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE101', 'SC001', 'P001', 'A', 1, 'KH001', 'DH101', 120000, TO_TIMESTAMP('2026-01-02 09:17:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE102', 'SC002', 'P002', 'A', 1, 'KH002', 'DH102', 100000, TO_TIMESTAMP('2026-01-02 10:02:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE103', 'SC003', 'P003', 'C', 5, 'KH003', 'DH103', 150000, TO_TIMESTAMP('2026-01-02 10:42:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE104', 'SC004', 'P001', 'A', 2, 'KH004', 'DH104', 120000, TO_TIMESTAMP('2026-01-03 08:32:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE105', 'SC002', 'P002', 'A', 2, 'KH005', 'DH105', 100000, TO_TIMESTAMP('2026-01-03 09:22:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE106', 'SC003', 'P003', 'C', 6, 'KH006', 'DH106', 150000, TO_TIMESTAMP('2026-01-03 10:12:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE107', 'SC001', 'P001', 'A', 3, 'KH007', 'DH107', 120000, TO_TIMESTAMP('2026-01-03 11:02:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE108', 'SC002', 'P002', 'A', 1, 'KH008', 'DH108', 100000, TO_TIMESTAMP('2026-01-04 08:47:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE109', 'SC004', 'P001', 'B', 1, 'KH009', 'DH109', 120000, TO_TIMESTAMP('2026-01-04 09:32:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE110', 'SC002', 'P002', 'A', 2, 'KH010', 'DH110', 100000, TO_TIMESTAMP('2026-01-04 10:17:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE111', 'SC003', 'P003', 'C', 5, 'KH011', 'DH111', 150000, TO_TIMESTAMP('2026-01-05 08:22:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE112', 'SC001', 'P001', 'B', 2, 'KH012', 'DH112', 120000, TO_TIMESTAMP('2026-01-05 09:12:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã thanh toán');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE113', 'SC004', 'P001', 'E', 1, 'KH013', 'DH113', 120000, TO_TIMESTAMP('2026-01-06 10:02:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE114', 'SC001', 'P001', 'E', 2, 'KH014', 'DH114', 120000, TO_TIMESTAMP('2026-01-06 10:42:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE115', 'SC002', 'P002', 'A', 1, 'KH015', 'DH115', 100000, TO_TIMESTAMP('2026-01-06 11:22:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE116', 'SC003', 'P003', 'C', 6, 'KH016', 'DH116', 150000, TO_TIMESTAMP('2026-01-07 08:12:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE117', 'SC002', 'P002', 'A', 2, 'KH017', 'DH117', 100000, TO_TIMESTAMP('2026-01-07 08:57:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE118', 'SC001', 'P001', 'A', 1, 'KH018', 'DH118', 120000, TO_TIMESTAMP('2026-01-07 09:37:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE119', 'SC003', 'P003', 'C', 5, 'KH019', 'DH119', 150000, TO_TIMESTAMP('2026-01-08 10:07:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE120', 'SC004', 'P001', 'A', 2, 'KH020', 'DH120', 120000, TO_TIMESTAMP('2026-01-08 10:52:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE121', 'SC002', 'P002', 'A', 1, 'KH001', 'DH121', 100000, TO_TIMESTAMP('2026-01-09 09:27:00', 'YYYY-MM-DD HH24:MI:SS'), 'Hủy');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE122', 'SC004', 'P001', 'B', 1, 'KH002', 'DH122', 120000, TO_TIMESTAMP('2026-01-09 10:17:00', 'YYYY-MM-DD HH24:MI:SS'), 'Hủy');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE123', 'SC003', 'P003', 'C', 6, 'KH003', 'DH123', 150000, TO_TIMESTAMP('2026-01-09 11:07:00', 'YYYY-MM-DD HH24:MI:SS'), 'Hủy');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES
+('VE124', 'SC001', 'P001', 'A', 3, 'KH004', 'DH124', 120000, TO_TIMESTAMP('2026-01-10 08:42:00', 'YYYY-MM-DD HH24:MI:SS'), 'Hủy');
+
+COMMIT;
+
+-- ========== THANH TOÁN BỔ SUNG ==========
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT101', 'DH101', TO_TIMESTAMP('2026-01-02 09:20:00', 'YYYY-MM-DD HH24:MI:SS'), 'Thẻ', 'Đã thanh toán', 165000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT102', 'DH102', TO_TIMESTAMP('2026-01-02 10:05:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Đã thanh toán', 130000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT103', 'DH103', TO_TIMESTAMP('2026-01-02 10:45:00', 'YYYY-MM-DD HH24:MI:SS'), 'ZaloPay', 'Đã thanh toán', 220000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT104', 'DH104', TO_TIMESTAMP('2026-01-03 08:35:00', 'YYYY-MM-DD HH24:MI:SS'), 'Tiền mặt', 'Đã thanh toán', 175000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT105', 'DH105', TO_TIMESTAMP('2026-01-03 09:25:00', 'YYYY-MM-DD HH24:MI:SS'), 'Visa', 'Đã thanh toán', 140000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT106', 'DH106', TO_TIMESTAMP('2026-01-03 10:15:00', 'YYYY-MM-DD HH24:MI:SS'), 'Thẻ', 'Đã thanh toán', 210000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT107', 'DH107', TO_TIMESTAMP('2026-01-03 11:05:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Đã thanh toán', 270000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT108', 'DH108', TO_TIMESTAMP('2026-01-04 08:50:00', 'YYYY-MM-DD HH24:MI:SS'), 'Visa', 'Đã thanh toán', 300000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT109', 'DH109', TO_TIMESTAMP('2026-01-04 09:35:00', 'YYYY-MM-DD HH24:MI:SS'), 'Tiền mặt', 'Đã thanh toán', 175000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT110', 'DH110', TO_TIMESTAMP('2026-01-04 10:20:00', 'YYYY-MM-DD HH24:MI:SS'), 'ZaloPay', 'Đã thanh toán', 130000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT111', 'DH111', TO_TIMESTAMP('2026-01-05 08:25:00', 'YYYY-MM-DD HH24:MI:SS'), 'Thẻ', 'Đã thanh toán', 220000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT112', 'DH112', TO_TIMESTAMP('2026-01-05 09:15:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Đã thanh toán', 165000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT113', 'DH113', TO_TIMESTAMP('2026-01-06 10:05:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Đang xử lý', 70000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT114', 'DH114', TO_TIMESTAMP('2026-01-06 10:45:00', 'YYYY-MM-DD HH24:MI:SS'), 'ZaloPay', 'Đang xử lý', 50000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT115', 'DH115', TO_TIMESTAMP('2026-01-06 11:25:00', 'YYYY-MM-DD HH24:MI:SS'), 'Tiền mặt', 'Đang xử lý', 40000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT116', 'DH116', TO_TIMESTAMP('2026-01-07 08:15:00', 'YYYY-MM-DD HH24:MI:SS'), 'Visa', 'Đang xử lý', 90000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT117', 'DH117', TO_TIMESTAMP('2026-01-07 09:00:00', 'YYYY-MM-DD HH24:MI:SS'), 'Thẻ', 'Đang xử lý', 120000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT118', 'DH118', TO_TIMESTAMP('2026-01-07 09:40:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Đang xử lý', 60000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT119', 'DH119', TO_TIMESTAMP('2026-01-08 10:10:00', 'YYYY-MM-DD HH24:MI:SS'), 'ZaloPay', 'Đang xử lý', 80000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT120', 'DH120', TO_TIMESTAMP('2026-01-08 10:55:00', 'YYYY-MM-DD HH24:MI:SS'), 'Tiền mặt', 'Đang xử lý', 50000);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT121', 'DH121', TO_TIMESTAMP('2026-01-09 09:30:00', 'YYYY-MM-DD HH24:MI:SS'), 'Visa', 'Thất bại', 0);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT122', 'DH122', TO_TIMESTAMP('2026-01-09 10:20:00', 'YYYY-MM-DD HH24:MI:SS'), 'Thẻ', 'Thất bại', 0);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT123', 'DH123', TO_TIMESTAMP('2026-01-09 11:10:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Thất bại', 0);
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES
+('TT124', 'DH124', TO_TIMESTAMP('2026-01-10 08:45:00', 'YYYY-MM-DD HH24:MI:SS'), 'ZaloPay', 'Thất bại', 0);
+
+COMMIT;
+
+-- ========== BỔ SUNG THÊM 100 ĐƠN HÀNG DEMO ==========
+-- Dọn dữ liệu cũ để block này có thể chạy lại
+DELETE FROM GOM WHERE MaDonHang BETWEEN 'DH201' AND 'DH300';
+DELETE FROM THANH_TOAN WHERE MaDonHang BETWEEN 'DH201' AND 'DH300';
+DELETE FROM DON_HANG WHERE MaDonHang BETWEEN 'DH201' AND 'DH300';
+
+COMMIT;
+
+DECLARE
+	v_ma_don_hang    VARCHAR2(20);
+	v_ma_nguoi_dung  VARCHAR2(20);
+	v_phuong_thuc    VARCHAR2(50);
+	v_trang_thai     VARCHAR2(20);
+	v_thoi_gian_dat  TIMESTAMP;
+	v_tong_tien      NUMBER;
+BEGIN
+	FOR i IN 201 .. 300 LOOP
+		v_ma_don_hang := 'DH' || TO_CHAR(i);
+		v_ma_nguoi_dung := 'KH' || LPAD(TO_CHAR(MOD(i - 201, 20) + 1), 3, '0');
+
+		v_phuong_thuc := CASE MOD(i, 4)
+			WHEN 0 THEN 'Online'
+			WHEN 1 THEN 'App'
+			WHEN 2 THEN 'Web'
+			ELSE 'Tại quầy'
+		END;
+
+		v_trang_thai := CASE
+			WHEN i <= 260 THEN 'Đã thanh toán'
+			WHEN i <= 285 THEN 'Chờ thanh toán'
+			ELSE 'Hủy'
+		END;
+
+		v_thoi_gian_dat := TO_TIMESTAMP('2026-02-01 08:00:00', 'YYYY-MM-DD HH24:MI:SS')
+						  + NUMTODSINTERVAL((i - 200) * 7, 'MINUTE');
+
+		v_tong_tien := CASE MOD(i, 6)
+			WHEN 0 THEN 95000
+			WHEN 1 THEN 130000
+			WHEN 2 THEN 165000
+			WHEN 3 THEN 175000
+			WHEN 4 THEN 220000
+			ELSE 300000
+		END;
+
+		INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai)
+		VALUES (v_ma_don_hang, v_ma_nguoi_dung, v_phuong_thuc, v_thoi_gian_dat, v_tong_tien, v_trang_thai);
+	END LOOP;
+
+	COMMIT;
+END;
+/
+
+-- ========== DATA MẪU TƯƠNG TÁC TRANSACTION ==========
+-- Mục tiêu: để bạn tự INSERT/UPDATE/DELETE vào GOM, VE_XEM_PHIM, THANH_TOAN
+-- rồi quan sát trigger tự cập nhật TongTien + TrangThai đơn hàng.
+DELETE FROM AP_DUNG WHERE MaVe BETWEEN 'VE901' AND 'VE906';
+DELETE FROM VE_XEM_PHIM WHERE MaVe BETWEEN 'VE901' AND 'VE906';
+DELETE FROM SUAT_CHIEU WHERE MaSuatChieu = 'SC901';
+DELETE FROM GHE WHERE MaPhong = 'P006' AND HangGhe = 'D' AND SoGhe BETWEEN 3 AND 6;
+DELETE FROM AP_DUNG WHERE MaVe BETWEEN 'VE901' AND 'VE912';
+DELETE FROM VE_XEM_PHIM WHERE MaVe BETWEEN 'VE901' AND 'VE912';
+DELETE FROM GOM WHERE MaDonHang BETWEEN 'DH901' AND 'DH912';
+DELETE FROM THANH_TOAN WHERE MaThanhToan BETWEEN 'TT901' AND 'TT930';
+DELETE FROM DON_HANG WHERE MaDonHang BETWEEN 'DH901' AND 'DH912';
+
+COMMIT;
+
+-- 12 đơn ở trạng thái mở để thao tác transaction thủ công
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH901', 'KH001', 'Online', TO_TIMESTAMP('2026-03-01 09:00:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH902', 'KH002', 'App', TO_TIMESTAMP('2026-03-01 09:05:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH903', 'KH003', 'Web', TO_TIMESTAMP('2026-03-01 09:10:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH904', 'KH004', 'Tại quầy', TO_TIMESTAMP('2026-03-01 09:15:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH905', 'KH005', 'Online', TO_TIMESTAMP('2026-03-01 09:20:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH906', 'KH006', 'App', TO_TIMESTAMP('2026-03-01 09:25:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH907', 'KH007', 'Web', TO_TIMESTAMP('2026-03-01 09:30:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH908', 'KH008', 'Online', TO_TIMESTAMP('2026-03-01 09:35:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH909', 'KH009', 'Tại quầy', TO_TIMESTAMP('2026-03-01 09:40:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH910', 'KH010', 'App', TO_TIMESTAMP('2026-03-01 09:45:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH911', 'KH011', 'Web', TO_TIMESTAMP('2026-03-01 09:50:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, ThoiGianDat, TongTien, TrangThai) VALUES ('DH912', 'KH012', 'Online', TO_TIMESTAMP('2026-03-01 09:55:00', 'YYYY-MM-DD HH24:MI:SS'), 0, 'Chờ thanh toán');
+
+COMMIT;
+
+-- Dữ liệu nền ban đầu để bạn dễ thao tác tăng/giảm tổng tiền
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH901', 'MH001', 1, 45000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH902', 'MH003', 1, 70000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH903', 'MH006', 1, 55000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH904', 'MH007', 1, 40000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH905', 'MH002', 1, 30000);
+INSERT INTO GOM (MaDonHang, MaHang, SoLuong, DonGia) VALUES ('DH906', 'MH004', 1, 60000);
+
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P006', 'D', 3, 'Giường nằm');
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P006', 'D', 4, 'Giường nằm');
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P006', 'D', 5, 'Giường nằm');
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe) VALUES ('P006', 'D', 6, 'Giường nằm');
+
+INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, NgayChieu, GioBatDau, GioKetThuc, GiaVeCoBan, TrangThai) VALUES
+('SC901', 'PH001', 'P006', TO_DATE('2026-03-01', 'YYYY-MM-DD'), TO_TIMESTAMP('2026-03-01 19:00:00', 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP('2026-03-01 22:00:00', 'YYYY-MM-DD HH24:MI:SS'), 120000, 'Đang mở');
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES ('VE901', 'SC901', 'P006', 'D', 1, 'KH001', 'DH901', 120000, TO_TIMESTAMP('2026-03-01 09:01:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES ('VE902', 'SC901', 'P006', 'D', 2, 'KH002', 'DH902', 120000, TO_TIMESTAMP('2026-03-01 09:06:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES ('VE903', 'SC901', 'P006', 'D', 3, 'KH003', 'DH903', 120000, TO_TIMESTAMP('2026-03-01 09:11:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES ('VE904', 'SC901', 'P006', 'D', 4, 'KH004', 'DH904', 120000, TO_TIMESTAMP('2026-03-01 09:16:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES ('VE905', 'SC901', 'P006', 'D', 5, 'KH005', 'DH905', 120000, TO_TIMESTAMP('2026-03-01 09:21:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe, MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai) VALUES ('VE906', 'SC901', 'P006', 'D', 6, 'KH006', 'DH906', 120000, TO_TIMESTAMP('2026-03-01 09:26:00', 'YYYY-MM-DD HH24:MI:SS'), 'Đã đặt');
+
+COMMIT;
+
+-- Thanh toán mẫu rất ít để giữ không gian tương tác
+-- DH901 đã thanh toán đủ để bạn demo trạng thái tự chuyển qua trigger
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES ('TT901', 'DH901', TO_TIMESTAMP('2026-03-01 09:03:00', 'YYYY-MM-DD HH24:MI:SS'), 'Thẻ', 'Đã thanh toán', 165000);
+-- DH902 mới thanh toán một phần, bạn có thể tự thêm TT mới để đủ tiền
+INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, NgayThanhToan, PhuongThuc, TrangThai, SoTien) VALUES ('TT902', 'DH902', TO_TIMESTAMP('2026-03-01 09:08:00', 'YYYY-MM-DD HH24:MI:SS'), 'Momo', 'Đang xử lý', 50000);
+
+COMMIT;
+
+-- Gợi ý thao tác demo nhanh:
+-- 1) INSERT thêm GOM/VE vào DH910 -> TongTien tăng tự động
+-- 2) DELETE GOM của DH903 -> TongTien giảm tự động
+-- 3) INSERT THANH_TOAN cho DH902 đủ tổng -> TrangThai DH902 tự đổi 'Đã thanh toán'
+-- 4) UPDATE GOM SoLuong ở DH904 -> TongTien cập nhật theo chênh lệch
+
 -- ========== QUẢN LÝ ==========
 INSERT INTO QUAN_LY (MaNguoiDung_QTV, MaRapPhim) VALUES ('AD001', 'RAP001');
 INSERT INTO QUAN_LY (MaNguoiDung_QTV, MaRapPhim) VALUES ('AD002', 'RAP002');
@@ -553,5 +866,92 @@ ALTER TABLE DANH_GIA ENABLE CONSTRAINT fk_dg_kh;
 ALTER TABLE DANH_GIA ENABLE CONSTRAINT fk_dg_phim;
 ALTER TABLE QUAN_LY ENABLE CONSTRAINT fk_ql_qtv;
 
+
+COMMIT;
+-- =============================================
+-- SESSION 1: Thực hiện transaction
+-- =============================================
+BEGIN
+    INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe,
+                              MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai)
+    VALUES ('VE923', 'SC001', 'P001', 'A', 2,
+            'KH001', 'DH903', 120000, SYSTIMESTAMP, 'Da dat');
+
+    -- DUNG LAI O DAY, CHUA COMMIT
+    -- Qua Session 2 chay SELECT de thay trang thai tam thoi
+    DBMS_OUTPUT.PUT_LINE('Da INSERT - chua COMMIT');
+
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Da COMMIT - trang thai chinh thuc!');
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('Loi: ' || SQLERRM);
+END;
+/
+ROLLBACK;
+-- =============================================
+-- SESSION 2: Quan sat (chay song song voi Session 1)
+-- =============================================
+
+-- Chay TRUOC khi Session 1 COMMIT -> khong thay VE999 (trang thai tam thoi)
+SELECT MaVe, HangGhe, SoGhe, TrangThai
+FROM VE_XEM_PHIM
+WHERE MaDonHang = 'DH903';
+
+-- Chay SAU khi Session 1 COMMIT -> thay VE999 (trang thai chinh thuc)
+SELECT MaVe, HangGhe, SoGhe, TrangThai
+FROM VE_XEM_PHIM
+WHERE MaDonHang = 'DH923';
+
+INSERT INTO VE_XEM_PHIM (MaVe, MaSuatChieu, MaPhong, HangGhe, SoGhe,
+                          MaNguoiDung_KH, MaDonHang, GiaVeCuoi, NgayDat, TrangThai)
+VALUES ('VE923', 'SC001', 'P001', 'B', 1,
+        'KH001', 'DH903', 120000, SYSTIMESTAMP, 'Đã đặt');
+
+ROLLBACK;
+
+select * from VE_XEM_PHIM where maphong = 'P001' and masuatchieu = 'SC001';
+delete from VE_XEM_PHIM where mave = 'VE923';
+
+SELECT * FROM suat_chieu FOR UPDATE;
+COMMIT;
+
+-- ============================================================================
+-- DEMO LOCKING RO RANG (2 SESSION)
+-- ============================================================================
+UPDATE DON_HANG
+SET TrangThai = 'Chờ thanh toán'
+WHERE MaDonHang IN ('DH113', 'DH114', 'DH115', 'DH116');
+
+COMMIT;
+
+-- SESSION 1: Khoa ro rang 1 dong DH113 (giu transaction, chua COMMIT)
+SELECT *
+FROM DON_HANG
+WHERE MaDonHang = 'DH113'
+FOR UPDATE;
+
+-- SESSION 2: Chay cau nay se gap ORA-00054 vi DH113 dang bi Session 1 khoa
+SELECT *
+FROM DON_HANG
+WHERE MaDonHang = 'DH113'
+FOR UPDATE NOWAIT;
+
+-- SESSION 2: Bo qua dong dang bi khoa, se lay cac dong con lai (DH114..DH116)
+SELECT *
+FROM DON_HANG
+WHERE MaDonHang IN ('DH113', 'DH114', 'DH115', 'DH116')
+FOR UPDATE SKIP LOCKED;
+
+-- KET THUC:
+-- 1) COMMIT o Session 2
+-- 2) COMMIT o Session 1 (dong duoi)
+
+SELECT *
+FROM DON_HANG
+WHERE MaDonHang = 'DH113';
+
+COMMIT;
 
 COMMIT;

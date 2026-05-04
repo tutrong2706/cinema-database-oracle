@@ -18,58 +18,76 @@ PROMPT ========================================================================
 
 -- 0. Create user and grant privileges
 -- PROMPT ============= [00] Creating User and Granting Privileges =============
--- @/docker-entrypoint-initdb.d/00_create_user_oracle.sql
+-- @@00_create_user_oracle.sql
 
 -- 1. Create all tables
 PROMPT ============= [01] Creating Tables =============
-@/docker-entrypoint-initdb.d/01_create_tables_oracle.sql
+@@01_create_tables_oracle.sql
 
 -- 2. Insert initial data
 PROMPT ============= [02] Inserting Sample Data =============
-@/docker-entrypoint-initdb.d/02_insert_data_oracle.sql
+@@02_insert_data_oracle.sql
+
+-- 2a. Insert cleaned extra movie data (with poster-safe upsert)
+PROMPT ============= [02A] Inserting Clean Extra Movie Data =============
+@@02a_insert_more_data.sql
+
+-- 2b. Insert balanced screenings (2-3 showtimes per movie, uniform layout)
+PROMPT ============= [02B] Inserting Balanced Screenings =============
+@@17_seed_massive_screenings_tickets.sql
+
+-- 2c/2d. Additional seed scripts.
+-- PROMPT ============= [02C] Inserting Purchase Test Data =============
+-- @@18_seed_purchase_test_data_oracle.sql
+PROMPT ============= [02D] Inserting Showtimes Top-Up (5-6 per movie) =============
+@@19_seed_massive_showtimes_oracle.sql
 -- 3. Create stored procedures for movie management
 PROMPT ============= [03] Creating Movie Management Procedures =============
-@/docker-entrypoint-initdb.d/03_sp_phim_oracle.sql
+@@03_sp_phim_oracle.sql
 
 -- 4. Create stored procedures for order management
 PROMPT ============= [04] Creating Order Management Procedures =============
-@/docker-entrypoint-initdb.d/04_sp_donhang_oracle.sql
+@@04_sp_donhang_oracle.sql
 
 -- 5. Create stored procedures for ticket management
 PROMPT ============= [05] Creating Ticket Management Procedures =============
-@/docker-entrypoint-initdb.d/05_sp_ve_oracle.sql
+@@05_sp_ve_oracle.sql
 
 -- 6. Create functions
 PROMPT ============= [06] Creating Functions =============
-@/docker-entrypoint-initdb.d/06_functions_oracle.sql
+@@06_functions_oracle.sql
 
 -- 7. Create business logic triggers
 PROMPT ============= [07] Creating Business Logic Triggers =============
-@/docker-entrypoint-initdb.d/07_triggers_business_oracle.sql
+@@07_triggers_business_oracle.sql
 
 -- 8. Create order total calculation triggers
 PROMPT ============= [08] Creating Order Total Calculation Triggers =============
-@/docker-entrypoint-initdb.d/08_triggers_tongtien_oracle.sql
+@@08_triggers_tongtien_oracle.sql
 
 -- 9. Create views and data access procedures
 PROMPT ============= [09] Creating Views and Data Access Procedures =============
-@/docker-entrypoint-initdb.d/09_sp_view_data_oracle.sql
+@@09_sp_view_data_oracle.sql
 
 -- 10. Run demo script (sample operations)
 --PROMPT ============= [10] Running Demo Script =============
---@/docker-entrypoint-initdb.d/10_demo_script_oracle.sql
+--@@10_demo_script_oracle.sql
 
 -- 11. Create image management features
 PROMPT ============= [11] Creating Image Management System =============
-@/docker-entrypoint-initdb.d/11_image_operations_oracle.sql
+@@11_image_operations_oracle.sql
 
 -- 12. Create API helper procedures
 PROMPT ============= [12] Creating API Helper Procedures =============
-@/docker-entrypoint-initdb.d/12_api_helper_procedures_oracle.sql
+@@12_api_helper_procedures_oracle.sql
 
 -- 13. Create enhanced views with flexible sorting
 PROMPT ============= [13] Creating Enhanced Views with Sorting =============
-@/docker-entrypoint-initdb.d/13_enhanced_views_sorting_oracle.sql
+@@13_enhanced_views_sorting_oracle.sql
+
+-- 16. Seed admin/test accounts and sync KHACH_HANG for all customer accounts
+PROMPT ============= [16] Seeding Accounts and Syncing Customers =============
+@@16_insert_admin_users.sql
 
 PROMPT ============= DATABASE MIGRATION COMPLETE! =============
 SPOOL OFF;
