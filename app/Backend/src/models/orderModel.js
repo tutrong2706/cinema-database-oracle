@@ -17,22 +17,81 @@ export async function getAllOrders() {
 }
 
 /**
- * Lấy đơn hàng theo ID
+ * Lấy đơn hàng theo ID với đầy đủ thông tin (phim, rạp, suất chiếu, ghế, combo)
  */
 export async function getOrderById(maDonHang) {
-    const sql = `
-        SELECT DH.MaDonHang AS MADONHANG, DH.MaNguoiDung_KH AS MANGUOIDUNG, 
-               DH.PhuongThuc AS PHUONGTHUC, DH.ThoiGianDat AS THOIGIANDAT, 
-               DH.TongTien AS TONGTIEN, DH.TrangThai AS TRANGTHAI,
-               TK.HoTen AS HOTEN, TK.Email AS EMAIL
+    // Lấy thông tin đơn hàng cơ bản
+    const orderSql = `
+        SELECT DH.MaDonHang AS MADONHANG, 
+               DH.MaNguoiDung_KH AS MANGUOIDUNG,
+               DH.ThoiGianDat AS THOIGIANDAT,
+               DH.TongTien AS TONGTIEN, 
+               DH.TrangThai AS TRANGTHAI
         FROM DON_HANG DH
-        LEFT JOIN KHACH_HANG KH ON DH.MaNguoiDung_KH = KH.MaNguoiDung
-        LEFT JOIN TAI_KHOAN TK ON DH.MaNguoiDung_KH = TK.MaNguoiDung
         WHERE DH.MaDonHang = :1
     `;
-    const results = await query(sql, [maDonHang]);
-    return results.length > 0 ? results[0] : null;
+    const orderResults = await query(orderSql, [maDonHang]);
+    if (orderResults.length === 0) return null;
+
+    const order = orderResults[0];
+
+    // Lấy thông tin vé (phim, rạp, suất chiếu, ghế)
+    const ticketSql = `
+        SELECT DISTINCT
+               SC.MaSuatChieu AS MASUATCHIEU,
+               P.TenPhim AS TENPHIM,
+               RC.Ten AS TENRAP,
+               SC.NgayChieu AS NGAYCHIEU,
+               SC.GioBatDau AS GIOBATDAU,
+               SC.GioKetThuc AS GIOKETHUC,
+               PC.MaPhong AS MAPHONG,
+               P.Anh AS ANH,
+               P.DoTuoi AS DOTUOI
+        FROM VE_XEM_PHIM V
+        JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
+        JOIN PHIM P ON SC.MaPhim = P.MaPhim
+        JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
+        JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
+        WHERE V.MaDonHang = :1
+        FETCH FIRST 1 ROWS ONLY
+    `;
+    const ticketResults = await query(ticketSql, [maDonHang]);
+    const suatChieu = ticketResults.length > 0 ? ticketResults[0] : null;
+
+    // Lấy danh sách ghế đã đặt
+    const seatsSql = `
+        SELECT V.MaVe,
+               V.HangGhe,
+               V.SoGhe,
+               V.GiaVeCuoi,
+               V.TrangThai
+        FROM VE_XEM_PHIM V
+        WHERE V.MaDonHang = :1
+    `;
+    const seatsResults = await query(seatsSql, [maDonHang]);
+
+    // Lấy danh sách combo (mặt hàng) trong đơn hàng
+    const comboSql = `
+        SELECT G.MaHang AS MAHANG,
+               MH.TenHang AS TENHANG,
+               G.SoLuong AS SOLUONG,
+               G.DonGia AS DONGIA
+        FROM GOM G
+        JOIN MAT_HANG MH ON G.MaHang = MH.MaHang
+        WHERE G.MaDonHang = :1
+    `;
+    const comboResults = await query(comboSql, [maDonHang]);
+
+    // Trả về đầy đủ dữ liệu
+    return {
+        ...order,
+        suatChieu: suatChieu,
+        seats: seatsResults,
+        combos: comboResults
+    };
 }
+
+
 
 /**
  * Lấy các mặt hàng trong đơn hàng
@@ -169,20 +228,3 @@ export async function getRevenueBycinema(startDate, endDate) {
     return await query(sql, [startDate || null, endDate || null]);
 }
 
-export async function getOrderTicketDetails(maDonHang) {
-    const sql = `
-        SELECT 
-            P.TenPhim AS TENPHIM, RC.Ten AS TENRAP, 
-            SC.ThoiGianBatDau AS SUATCHIEU,
-            (SELECT LISTAGG(V2.HangGhe || V2.SoGhe, ', ') WITHIN GROUP (ORDER BY V2.HangGhe, V2.SoGhe)
-             FROM VE_XEM_PHIM V2 WHERE V2.MaDonHang = :1) AS DANHSACHGHE
-        FROM VE_XEM_PHIM V
-        JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
-        JOIN PHIM P ON SC.MaPhim = P.MaPhim
-        JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
-        JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
-        WHERE V.MaDonHang = :1 AND ROWNUM = 1
-    `;
-    const results = await query(sql, [maDonHang]);
-    return results.length > 0 ? results[0] : {};
-}

@@ -184,11 +184,10 @@ router.put('/profile/:userId', authenticateToken, authController.updateProfile);
 router.post('/booking', authenticateToken, bookingController.createBooking);
 
 // GET /auth/orders - Lấy đơn hàng của user
-router.get('/orders', authenticateToken, bookingController.getUserOrders);
 router.get('/orders', authenticateToken, getMyOrders);
+
+// GET /auth/orders/:id - Lấy chi tiết đơn hàng (với phim, rạp, suất chiếu, ghế)
 router.get('/orders/:id', authenticateToken, getOrderById);
-// GET /auth/orders/:id - Lấy chi tiết đơn hàng
-router.get('/orders/:id', authenticateToken, bookingController.getOrderDetail);
 
 // POST /auth/orders/:id/pay - Thanh toán đơn hàng
 router.post('/orders/:id/pay', authenticateToken, bookingController.payOrder);

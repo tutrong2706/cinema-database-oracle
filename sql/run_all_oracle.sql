@@ -52,8 +52,12 @@ PROMPT ============= [02C] Inserting Purchase Test Data =============
 PROMPT ============= [02D] Inserting Showtimes Top-Up (5-6 per movie) =============
 @@/docker-entrypoint-initdb.d/19_seed_massive_showtimes_oracle.sql
 
--- 2e. BƠM TIỀN CHO HỆ THỐNG (Chuyển đơn Chờ thanh toán -> Đã thanh toán & Cập nhật tổng tiền)
-PROMPT ============= [02E] Auto-Updating Revenue Data =============
+-- 2e. Seed massive reviews (10 đánh giá mỗi phim)
+PROMPT ============= [02E] Inserting Massive Movie Reviews =============
+@@/docker-entrypoint-initdb.d/20_seed_massive_reviews.sql
+
+-- 2f. BƠM TIỀN CHO HỆ THỐNG (Chuyển đơn Chờ thanh toán -> Đã thanh toán & Cập nhật tổng tiền)
+PROMPT ============= [02F] Auto-Updating Revenue Data =============
 BEGIN
     -- 1. Chuyển ngẫu nhiên khoảng 80% đơn hàng "Chờ thanh toán" thành "Đã thanh toán"
     UPDATE DON_HANG

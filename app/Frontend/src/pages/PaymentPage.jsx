@@ -64,7 +64,10 @@ const PaymentPage = () => {
                 const payload = {
                     MaSuatChieu: bookingInfo.suatChieu.MASUATCHIEU,
                     MaPhong: bookingInfo.suatChieu.MAPHONG,
-                    DanhSachGhe: bookingInfo.seats,
+                    DanhSachGhe: bookingInfo.seats ? bookingInfo.seats.map(s => ({
+                        HangGhe: s.HangGhe || s.HANGGHE,
+                        SoGhe: s.SoGhe || s.SOGHE
+                    })) : [],
                     DanhSachCombo: bookingInfo.combos ? bookingInfo.combos.map(c => ({ MaHang: c.MAHANG, SoLuong: c.SoLuong })) : [],
                     isPayLater: false
                 };
@@ -90,7 +93,10 @@ const PaymentPage = () => {
             const payload = {
                 MaSuatChieu: bookingInfo.suatChieu.MASUATCHIEU,
                 MaPhong: bookingInfo.suatChieu.MAPHONG,
-                DanhSachGhe: bookingInfo.seats,
+                DanhSachGhe: bookingInfo.seats ? bookingInfo.seats.map(s => ({
+                    HangGhe: s.HangGhe || s.HANGGHE,
+                    SoGhe: s.SoGhe || s.SOGHE
+                })) : [],
                 DanhSachCombo: bookingInfo.combos ? bookingInfo.combos.map(c => ({ MaHang: c.MAHANG, SoLuong: c.SoLuong })) : [],
                 isPayLater: true
             };
@@ -149,7 +155,7 @@ const PaymentPage = () => {
                 <p><strong>Phim:</strong> {bookingInfo.suatChieu.TENPHIM}</p>
                 <p><strong>Rạp:</strong> {bookingInfo.suatChieu.TENRAP || 'Rạp'}</p>
                 <p><strong>Suất chiếu:</strong> {new Date(bookingInfo.suatChieu.GIOBATDAU).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {bookingInfo.suatChieu.NGAYCHIEU ? new Date(bookingInfo.suatChieu.NGAYCHIEU).toLocaleDateString('vi-VN') : ''}</p>
-                <p><strong>Ghế:</strong> {bookingInfo.seats.map(s => `${s.HangGhe}${s.SoGhe}`).join(', ')}</p>
+                <p><strong>Ghế:</strong> {bookingInfo.seats && bookingInfo.seats.length > 0 ? bookingInfo.seats.map(s => `${s.HANGGHE || s.HangGhe}${s.SOGHE || s.SoGhe}`).join(', ') : 'Chưa chọn'}</p>
                 
                 {bookingInfo.combos && bookingInfo.combos.length > 0 && (
                     <div className="mt-2">

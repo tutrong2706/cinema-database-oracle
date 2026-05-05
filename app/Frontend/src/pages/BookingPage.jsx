@@ -33,9 +33,9 @@ const BookingPage = () => {
     // Fetch ghế đã đặt khi chọn suất chiếu
     useEffect(() => {
         if (selectedSuat) {
-            axiosClient.get(`/auth/suat-chieus/${selectedSuat.MASUATCHIEU}/booked-seats`)
+            axiosClient.get(`/auth/tickets`, { params: { MaSuatChieu: selectedSuat.MASUATCHIEU } })
                 .then(res => setBookedSeats(res.data.meta || []))
-                .catch(err => console.error(err));
+                .catch(err => console.error('Lỗi tải ghế đã đặt:', err));
         } else {
             setBookedSeats([]);
         }
@@ -47,8 +47,9 @@ const BookingPage = () => {
         setSelectedSuat(null);
         setSelectedSeats([]);
 
-        const params = { MaPhim, NgayChieu: ngayChieu };
+        const params = { MaPhim };
         if (selectedRap) params.MaRapPhim = selectedRap;
+        if (ngayChieu) params.NgayChieu = ngayChieu;
 
         axiosClient.get('/auth/suat-chieus', { params })
         .then(res => {
@@ -181,7 +182,10 @@ const BookingPage = () => {
                                             : '!bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-300'
                                         }`}
                                     >
-                                        {new Date(sc.GIOBATDAU).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {sc.TENPHONG}
+                                        {sc.GIOBATDAU 
+                                            ? new Date(sc.GIOBATDAU).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) 
+                                            : 'N/A'} 
+                                        - {sc.TENPHONG || 'Phòng'}
                                     </button>
                                 ))}
                             </div>
@@ -196,7 +200,7 @@ const BookingPage = () => {
                     <h3 className="text-xl font-bold mb-6 text-white">Sơ Đồ Ghế Ngồi: {selectedSuat.TENPHONG}</h3>
 
                     {/* Màn Hình */}
-                    <div className="w-full !g-gray-700/50 text-gray-400 py-2 mb-10 rounded-t-xl border-b-4 border-gray-500 font-bold uppercase tracking-wider">
+                    <div className="w-full !bg-gray-700/50 text-gray-400 py-2 mb-10 rounded-t-xl border-b-4 border-gray-500 font-bold uppercase tracking-wider">
                         MÀN HÌNH
                     </div>
                     
@@ -210,20 +214,26 @@ const BookingPage = () => {
                                     const isSelected = selectedSeats.some(s => s.HangGhe === row && s.SoGhe === num);
                                     
                                     // Kiểm tra ghế đã bán từ API
-                                    const isSold = bookedSeats.some(s => 
+                                    const bookedSeat = bookedSeats.find(s => 
                                         (s.HangGhe === row || s.HANGGHE === row) && 
                                         (s.SoGhe === num || s.SOGHE === num)
                                     );
 
+                                    // Phân loại trạng thái ghế dựa vào dữ liệu Backend trả về
+                                    const isPending = bookedSeat && (bookedSeat.TrangThai === 'Chờ thanh toán' || bookedSeat.TRANGTHAI === 'Chờ thanh toán');
+                                    const isSold = bookedSeat && !isPending; // Những trạng thái còn lại (như Đã thanh toán)
+                                    const isDisabled = !!bookedSeat; // Cả chờ và đã bán đều khóa không cho người khác click
+
                                     return (
                                         <button
                                             key={`${row}${num}`}
-                                            onClick={() => !isSold && toggleSeat(row, num)}
-                                            disabled={isSold}
+                                            onClick={() => !isDisabled && toggleSeat(row, num)}
+                                            disabled={isDisabled}
                                             className={`w-10 h-10 rounded-md text-sm font-bold border ${
-                                                isSold ? '!bg-gray-600 text-gray-400 cursor-not-allowed border-gray-500' 
-                                                : isSelected ? '!bg-red-600 text-white border-red-700 hover:bg-red-700 shadow-md shadow-red-600/40' 
-                                                : '!bg-gray-300 text-black border-gray-400 hover:bg-gray-200'
+                                                isSold ? '!bg-gray-600 text-gray-400 cursor-not-allowed border-gray-500' // Đã bán -> Đen
+                                                : isPending ? '!bg-yellow-500 text-white cursor-not-allowed border-yellow-600' // Chờ thanh toán -> Vàng
+                                                : isSelected ? '!bg-red-600 text-white border-red-700 hover:bg-red-700 shadow-md shadow-red-600/40' // Đang chọn -> Đỏ
+                                                : '!bg-gray-300 text-black border-gray-400 hover:bg-gray-200' // Trống -> Trắng
                                             } transition duration-150`}
                                         >
                                             {num}
@@ -232,15 +242,16 @@ const BookingPage = () => {
                                 })}
                                 <span className="w-6 text-right text-sm font-bold text-gray-400">{row}</span>
                             </div>
-                        ))}
+                        ))} 
                     </div>
 
                     {/* Chú thích */}
                     <div className="flex justify-center gap-8 mt-8 text-sm">
-                        <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-300 border"></span> Ghế trống</div>
-                        <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-red-600"></span> Đang chọn</div>
-                        <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-600"></span> Đã bán</div>
-                    </div>
+                    <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-300 border"></span> Ghế trống</div>
+                    <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-red-600"></span> Đang chọn</div>
+                    <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-yellow-500"></span> Chờ thanh toán</div>
+                    <div className="flex items-center gap-2"><span className="w-4 h-4 rounded-sm bg-gray-600"></span> Đã bán</div>
+                </div>
 
                     {/* Bước 4: Chọn Combo */}
                     <div className="mt-8 border-t border-gray-700 pt-6">
@@ -272,19 +283,21 @@ const BookingPage = () => {
                     {/* Tóm tắt & Thanh toán */}
                     <div className="mt-10 border-t border-gray-700 pt-6 flex flex-col sm:flex-row justify-between items-center">
                         <div className="text-left mb-4 sm:mb-0">
-                            <p className="text-gray-300 text-sm">Ghế chọn: <span className="font-bold text-white">{selectedSeats.map(s => `${s.HangGhe}${s.SoGhe}`).join(', ') || "Chưa chọn"}</span></p>
+                            <p className="text-gray-300 text-sm">Ghế chọn: <span className="font-bold text-white">{selectedSeats.map(s => `${s.HangGhe || s.HANGGHE}${s.SoGhe || s.SOGHE}`).join(', ') || "Chưa chọn"}</span></p>
                             <p className="text-xl font-extrabold text-[#00E5FF] mt-1">
                                 Tổng tiền: <span className="text-yellow-400">{calculateTotal().toLocaleString('vi-VN')} VNĐ</span>
                             </p>
-                            <p className="text-xs text-gray-500 mt-1">Giá vé cơ bản: {selectedSuat.GIAVECOBAN.toLocaleString('vi-VN')} VNĐ/ghế</p>
+                            <p className="text-xs text-gray-500 mt-1">
+                                Giá vé cơ bản: {(selectedSuat?.GIAVECOBAN || 0).toLocaleString('vi-VN')} VNĐ/ghế
+                            </p>
                         </div>
                         <button 
                             onClick={handleConfirm}
                             disabled={selectedSeats.length === 0}
                             className={`px-10 py-3 rounded-xl font-bold transition transform text-lg ${
                                 selectedSeats.length > 0 
-                                ?'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] !text-black hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30'
-                                :'!bg-gray-700 !text-gray-500 cursor-not-allowed opacity-60'
+                                ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] !text-black hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30'
+                                : '!bg-gray-700 !text-gray-500 cursor-not-allowed opacity-60'
                             }`}
                         >
                             TIẾP TỤC THANH TOÁN

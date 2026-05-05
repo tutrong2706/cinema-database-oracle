@@ -26,10 +26,35 @@ export async function getOrderById(req, res) {
             return res.status(404).json(handleErrorResponse(404, 'Đơn hàng không tồn tại'));
         }
 
-        const items = await orderModel.getOrderItems(id);
+        // Format lại dữ liệu ghế để khớp với PaymentPage
+        const formattedSeats = order.seats && order.seats.length > 0 
+            ? order.seats.map(seat => ({
+                MAVE: seat.MAVE || seat.MaVe,
+                HANGGHE: seat.HANGGHE || seat.HangGhe,
+                SOGHE: seat.SOGHE || seat.SoGhe,
+                GIAVECUOI: seat.GIAVECUOI || seat.GiaVeCuoi,
+                TRANGTHAI: seat.TRANGTHAI || seat.TrangThai
+            }))
+            : [];
+
+        // Trả về dữ liệu đầy đủ cho PaymentPage
         return res.status(200).json(handleSuccessResponse(200, 'OK', {
-            ...order,
-            items: items
+            MADONHANG: order.MADONHANG,
+            MANGUOIDUNG: order.MANGUOIDUNG,
+            THOIGIANDAT: order.THOIGIANDAT,
+            TONGTIEN: order.TONGTIEN,
+            TRANGTHAI: order.TRANGTHAI,
+            MASUATCHIEU: order.suatChieu?.MASUATCHIEU,
+            TENPHIM: order.suatChieu?.TENPHIM,
+            TENRAP: order.suatChieu?.TENRAP,
+            NGAYCHIEU: order.suatChieu?.NGAYCHIEU,
+            GIOBATDAU: order.suatChieu?.GIOBATDAU,
+            GIOKETHUC: order.suatChieu?.GIOKETHUC,
+            MAPHONG: order.suatChieu?.MAPHONG,
+            ANH: order.suatChieu?.ANH,
+            DOTUOI: order.suatChieu?.DOTUOI,
+            seats: formattedSeats,
+            combos: order.combos || []
         }));
     } catch (error) {
         return res.status(500).json(handleErrorResponse(500, error.message));
