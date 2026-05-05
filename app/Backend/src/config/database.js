@@ -120,7 +120,42 @@ export async function execute(sql, params = []) {
 }
 
 /**
+<<<<<<< Updated upstream
  * Gọi Stored Procedure[cite: 4]
+=======
+ * Cháº¡y nhiá»u thao tÃ¡c trong cÃ¹ng má»™t transaction
+ * @param {(connection: import('oracledb').Connection, oracledb: typeof import('oracledb')) => Promise<any>} work
+ * @returns {Promise<any>}
+ */
+export async function withTransaction(work) {
+    let connection;
+    try {
+        connection = await oracledb.getConnection(dbConfig);
+        const result = await work(connection, oracledb);
+        await connection.commit();
+        return result;
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Rollback failed:', rollbackError.message);
+            }
+        }
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
+/**
+ * Gọi Stored Procedure
+ * @param {string} procName - Tên procedure
+ * @param {Array} params - Tham số
+ * @returns {Promise<Array>} - Kết quả
+>>>>>>> Stashed changes
  */
 export async function callProcedure(procName, params = []) {
     let connection;

@@ -18,6 +18,20 @@ export async function getAccountByEmail(email) {
 }
 
 /**
+ * Lấy tài khoản theo email hoặc mã người dùng
+ */
+export async function getAccountByEmailOrId(identifier) {
+    const sql = `
+        SELECT *
+        FROM TAI_KHOAN
+        WHERE LOWER(Email) = LOWER(:1)
+           OR LOWER(MaNguoiDung) = LOWER(:2)
+    `;
+    const results = await query(sql, [identifier, identifier]);
+    return results.length > 0 ? results[0] : null;
+}
+
+/**
  * Lấy tài khoản theo ID
  */
 export async function getAccountById(maNguoiDung) {
@@ -40,6 +54,35 @@ export async function createAccount(accountData) {
     return await execute(sql, [
         MaNguoiDung, HoTen, Email, MatKhau, SDT, DiaChi, VaiTro || 'Khach', GioiTinh || null
     ]);
+}
+
+/**
+ * Lấy thông tin khách hàng theo mã người dùng
+ */
+export async function getCustomerProfileById(maNguoiDung) {
+    const sql = `
+        SELECT MaNguoiDung, LoaiThanhVien, DiemTichLuy
+        FROM KHACH_HANG
+        WHERE MaNguoiDung = :1
+    `;
+    const results = await query(sql, [maNguoiDung]);
+    return results.length > 0 ? results[0] : null;
+}
+
+/**
+ * Đảm bảo tài khoản có bản ghi KHACH_HANG (idempotent)
+ */
+export async function ensureCustomerProfile(maNguoiDung, loaiThanhVien = 'Bronze', diemTichLuy = 0) {
+    const sql = `
+        MERGE INTO KHACH_HANG KH
+        USING (SELECT :1 AS MaNguoiDung FROM DUAL) SRC
+        ON (KH.MaNguoiDung = SRC.MaNguoiDung)
+        WHEN NOT MATCHED THEN
+            INSERT (MaNguoiDung, LoaiThanhVien, DiemTichLuy)
+            VALUES (SRC.MaNguoiDung, :2, :3)
+    `;
+
+    return await execute(sql, [maNguoiDung, loaiThanhVien, diemTichLuy]);
 }
 
 /**

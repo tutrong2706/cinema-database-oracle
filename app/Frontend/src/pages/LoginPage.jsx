@@ -51,13 +51,13 @@ const LoginPage = () => {
                     </div>
                 )}
                 <div className="mb-5">
-                    <label className="block text-gray-400 mb-2 text-sm font-medium">Email</label>
+                    <label className="block text-gray-400 mb-2 text-sm font-medium">Email hoặc mã người dùng</label>
                     <input 
                         type="text" 
                         className="w-full p-3 rounded-lg bg-gray-800 text-white border border-gray-700 focus:border-[#00E5FF] outline-none transition placeholder-gray-500"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="Nhập email hoặc tên người dùng"
+                        placeholder="Ví dụ: a@example.com hoặc KH001"
                         required
                     />
                 </div>

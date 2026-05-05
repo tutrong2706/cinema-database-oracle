@@ -49,6 +49,12 @@ docker exec -it cinema-oracle-db sqlplus dev/dev123@//localhost:1521/XEPDB1
 @/docker-entrypoint-initdb.d/run_all_oracle.sql
 ```
 
+`run_all_oracle.sql` hiện đã bao gồm các script seed mở rộng để test mua vé tải lớn:
+- `02a_insert_more_data.sql` (phim/phòng/suất chiếu/đơn/vé mở rộng)
+- `17_seed_massive_screenings_tickets.sql` (massive data rạp/phòng/suất chiếu/vé)
+- `18_seed_purchase_test_data_oracle.sql` (nhiều đơn chờ thanh toán cho flow mua vé)
+- `19_seed_massive_showtimes_oracle.sql` (bơm rất nhiều suất chiếu để test transaction)
+
 ---
 
 ## 📊 Database Schema

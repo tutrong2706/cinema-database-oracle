@@ -171,10 +171,24 @@ router.get('/suat-chieus', bookingController.getScreenings);
 router.get('/suat-chieus/:id/booked-seats', bookingController.getBookedSeats);
 
 /**
+ * @swagger
+ * /auth/suat-chieus/{id}/seats:
+ *   get:
+ *     summary: Láº¥y sÆ¡ Ä‘á»“ gháº¿ cá»§a suáº¥t chiáº¿u
+ *     tags: [Booking]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ */
+router.get('/suat-chieus/:id/seats', bookingController.getSeatMap);
+
+/**
  * Protected routes - Cần authentication
  */
 
 // GET /auth/profile - Lấy thông tin profile
+router.post('/booking', authenticateToken, bookingController.createBooking);
 router.get('/profile', authenticateToken, authController.getProfile);
 
 // PUT /auth/profile/:userId - Cập nhật profile
@@ -183,6 +197,7 @@ router.put('/profile/:userId', authenticateToken, authController.updateProfile);
 // POST /auth/booking - Tạo đơn hàng mới
 router.post('/booking', authenticateToken, bookingController.createBooking);
 
+<<<<<<< Updated upstream
 // GET /auth/orders - Lấy đơn hàng của user
 router.get('/orders', authenticateToken, getMyOrders);
 
@@ -193,6 +208,11 @@ router.get('/orders/:id', authenticateToken, getOrderById);
 router.post('/orders/:id/pay', authenticateToken, bookingController.payOrder);
 
 // POST /auth/orders/:id/cancel - Hủy đơn hàng
+=======
+// GET /auth/orders/:id - Lấy chi tiết đơn hàng
+router.get('/orders/:id', authenticateToken, bookingController.getOrderDetail);
+router.post('/orders/:id/pay', authenticateToken, bookingController.payOrder);
+>>>>>>> Stashed changes
 router.post('/orders/:id/cancel', authenticateToken, bookingController.cancelOrder);
 
 // GET /auth/tickets - Lấy vé của user
