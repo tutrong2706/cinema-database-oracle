@@ -8,15 +8,16 @@ import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseH
 export async function login(req, res) {
     try {
         const { email, password } = req.body;
+        const identifier = (email || '').trim();
 
-        if (!email || !password) {
-            return res.status(400).json(handleErrorResponse(400, 'Email và password bắt buộc'));
+        if (!identifier || !password) {
+            return res.status(400).json(handleErrorResponse(400, 'Email/mã người dùng và password bắt buộc'));
         }
 
-        const user = await accountModel.getAccountByEmail(email);
+        const user = await accountModel.getAccountByEmailOrId(identifier);
 
         if (!user) {
-            return res.status(401).json(handleErrorResponse(401, 'Email không tồn tại'));
+            return res.status(401).json(handleErrorResponse(401, 'Tài khoản không tồn tại'));
         }
 
         // So sánh mật khẩu (trong thực tế dùng bcrypt)
@@ -77,6 +78,8 @@ export async function register(req, res) {
             DiaChi: diaChi || '',
             VaiTro: 'Khach'
         });
+
+        await accountModel.ensureCustomerProfile(maNguoiDung);
 
         return res.status(201).json(handleSuccessResponse(201, 'Đăng ký thành công'));
     } catch (error) {

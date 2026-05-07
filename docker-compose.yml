@@ -18,6 +18,34 @@ services:
       retries: 5
       start_period: 60s
 
+  # MongoDB 7.0 (Transaction Demo)
+  mongodb:
+    image: mongo:7.0
+    container_name: cinema-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: cinema_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongodb/01-init-collections.js:/docker-entrypoint-initdb.d/01-init-collections.js
+      - ./mongodb/02-sample-data.js:/docker-entrypoint-initdb.d/02-sample-data.js
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    command: mongod --replSet rs0
+    networks:
+      - cinema-network
+
 volumes:
   oracle_data:
     driver: local
+  mongodb_data:
+    driver: local
+
+networks:
+  cinema-network:
+    driver: bridge

@@ -8,15 +8,10 @@ export async function getAllMovies() {
         SELECT 
             MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, 
             NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh,
-            DiemTrungBinh AS DIEMDANHGIA,
-            FUNC_DanhGiaHieuQuaPhim(MaPhim) AS HIEUQUA,
-            CASE 
-                WHEN TongDoanhThu > 1000000 THEN 'Tuyệt vời (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                WHEN TongDoanhThu > 500000 THEN 'Hot (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                WHEN TongDoanhThu > 100000 THEN 'Bình thường (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                ELSE 'Cần cải thiện (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-            END AS HIEUQUAMOI
-        FROM V_PHIM_SORTED 
+            0 AS DIEMDANHGIA,
+            'N/A' AS HIEUQUA,
+            'Cần cải thiện' AS HIEUQUAMOI
+        FROM PHIM 
         ORDER BY NgayKhoiChieu DESC
     `;
     return await query(sql);
@@ -30,15 +25,10 @@ export async function getMovieById(maPhim) {
         SELECT 
             MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, 
             NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh,
-            DiemTrungBinh AS DIEMDANHGIA,
-            FUNC_DanhGiaHieuQuaPhim(MaPhim) AS HIEUQUA,
-            CASE 
-                WHEN TongDoanhThu > 1000000 THEN 'Tuyệt vời (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                WHEN TongDoanhThu > 500000 THEN 'Hot (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                WHEN TongDoanhThu > 100000 THEN 'Bình thường (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                ELSE 'Cần cải thiện (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-            END AS HIEUQUAMOI
-        FROM V_PHIM_SORTED 
+            0 AS DIEMDANHGIA,
+            'N/A' AS HIEUQUA,
+            'Cần cải thiện' AS HIEUQUAMOI
+        FROM PHIM 
         WHERE MaPhim = :1
     `;
     const results = await query(sql, [maPhim]);
@@ -53,15 +43,10 @@ export async function searchMovies(keyword = '', genre = '', rating = '0', speci
         `SELECT 
             MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien, DienVienChinh, 
             NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh,
-            DiemTrungBinh AS DIEMDANHGIA,
-            FUNC_DanhGiaHieuQuaPhim(MaPhim) AS HIEUQUA,
-            CASE 
-                WHEN TongDoanhThu > 1000000 THEN 'Tuyệt vời (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                WHEN TongDoanhThu > 500000 THEN 'Hot (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                WHEN TongDoanhThu > 100000 THEN 'Bình thường (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-                ELSE 'Cần cải thiện (' || ROUND(TongDoanhThu/1000000, 1) || 'M)'
-            END AS HIEUQUAMOI
-        FROM V_PHIM_SORTED
+            0 AS DIEMDANHGIA,
+            'N/A' AS HIEUQUA,
+            'Cần cải thiện' AS HIEUQUAMOI
+        FROM PHIM
         WHERE 1=1`
     ];
 
@@ -78,12 +63,14 @@ export async function searchMovies(keyword = '', genre = '', rating = '0', speci
     }
 
     if (!isNaN(Number(rating)) && Number(rating) > 0) {
-        sqlParts.push(`AND NVL(DiemTrungBinh, 0) >= :${binds.length + 1}`);
-        binds.push(Number(rating));
+        // Temporarily disable rating filter since DiemTrungBinh requires view initialization
+        // sqlParts.push(`AND NVL(DiemTrungBinh, 0) >= :${binds.length + 1}`);
+        // binds.push(Number(rating));
     }
 
     if (special === 'above_avg') {
-        sqlParts.push(`AND DiemTrungBinh > (SELECT NVL(AVG(DiemTrungBinh), 0) FROM V_PHIM_SORTED)`);
+        // Temporarily disable above_avg filter since it requires view initialization
+        // sqlParts.push(`AND DiemTrungBinh > (SELECT NVL(AVG(DiemTrungBinh), 0) FROM V_PHIM_SORTED)`);
     }
 
     sqlParts.push('ORDER BY NgayKhoiChieu DESC');

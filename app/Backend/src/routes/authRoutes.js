@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
 import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
 import { getMyOrders } from '../controllers/orderController.js';
-import { getOrderById } from '../controllers/orderController.js'
+import { getOrderById } from '../controllers/orderController.js';
 const router = express.Router();
 
 /**
@@ -171,6 +171,19 @@ router.get('/suat-chieus', bookingController.getScreenings);
 router.get('/suat-chieus/:id/booked-seats', bookingController.getBookedSeats);
 
 /**
+ * @swagger
+ * /auth/suat-chieus/{id}/seats:
+ *   get:
+ *     summary: Láº¥y sÆ¡ Ä‘á»“ gháº¿ cá»§a suáº¥t chiáº¿u
+ *     tags: [Booking]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ */
+router.get('/suat-chieus/:id/seats', bookingController.getSeatMap);
+
+/**
  * Protected routes - Cần authentication
  */
 
@@ -182,7 +195,6 @@ router.put('/profile/:userId', authenticateToken, authController.updateProfile);
 
 // POST /auth/booking - Tạo đơn hàng mới
 router.post('/booking', authenticateToken, bookingController.createBooking);
-
 // GET /auth/orders - Lấy đơn hàng của user
 router.get('/orders', authenticateToken, getMyOrders);
 

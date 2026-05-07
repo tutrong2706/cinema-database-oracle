@@ -9,7 +9,7 @@ import AdminPage from './pages/AdminPage';
 import SearchPage from './pages/SearchPage';
 import ProfilePage from './pages/ProfilePage';
 import RevenueReportPage from './pages/RevenueReportPage';
-import ProtectedAdminRoute from './components/ProtectedAdminRoute';  // ✅ Added import
+import ProtectedAdminRoute from './components/ProtectedAdminRoute';
 
 function App() {
   return (
@@ -24,9 +24,9 @@ function App() {
             <Route path="/booking/:id" element={<BookingPage />} />
             <Route path="/payment" element={<PaymentPage />} />
             <Route path="/search" element={<SearchPage />} />
-            <Route path="/admin" element={<ProtectedAdminRoute element={<AdminPage />} />} />  {/* ✅ Protected */}
+            <Route path="/admin" element={<ProtectedAdminRoute element={<AdminPage />} />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/revenue-report" element={<ProtectedAdminRoute element={<RevenueReportPage />} />} />  {/* ✅ Protected */}
+            <Route path="/revenue-report" element={<ProtectedAdminRoute element={<RevenueReportPage />} />} />
           </Routes>
         </div>
       </div>

@@ -56,9 +56,13 @@ const PaymentPage = () => {
         try {
             if (bookingInfo.isExistingOrder) {
                 // Thanh toán đơn hàng cũ
-                await axiosClient.post(`/auth/orders/${bookingInfo.MaDonHang}/pay`);
-                alert("Thanh toán thành công!");
-                navigate('/profile');
+                const res = await axiosClient.post(`/auth/orders/${bookingInfo.MaDonHang}/pay`);
+                if ([200, 201].includes(res.data.code)) {
+                    // ✅ Show success notification
+                    const loyaltyPoints = Math.floor((bookingInfo.totalPrice || 0) / 1000);
+                    alert(`✅ Đã mua hàng thành công!\n💰 Tổng tiền: ${Number(bookingInfo.totalPrice).toLocaleString('vi-VN')} đ\n⭐ Tích lũy: +${loyaltyPoints} điểm`);
+                    navigate('/profile');
+                }
             } else {
                 // Tạo đơn hàng mới và thanh toán luôn
                 const payload = {
@@ -72,8 +76,11 @@ const PaymentPage = () => {
                     isPayLater: false
                 };
                 const res = await axiosClient.post('/auth/booking', payload);
-                if (res.data.code === 201) {
-                    alert(`Đặt vé thành công! Mã đơn: ${res.data.meta.MaDonHang}`);
+                if ([200, 201].includes(res.data.code)) {
+                    // ✅ Show success notification with loyalty points
+                    const loyaltyPoints = Math.floor((bookingInfo.totalPrice || 0) / 1000);
+                    const orderId = res.data.meta?.MaDonHang || res.data.meta?.MADONHANG || '';
+                    alert(`✅ Đã mua hàng thành công!\n💰 Tổng tiền: ${Number(bookingInfo.totalPrice).toLocaleString('vi-VN')} đ\n⭐ Tích lũy: +${loyaltyPoints} điểm${orderId ? `\n📦 Mã đơn: ${orderId}` : ''}`);
                     localStorage.removeItem('bookingTemp');
                     navigate('/profile');
                 }
@@ -101,7 +108,7 @@ const PaymentPage = () => {
                 isPayLater: true
             };
             const res = await axiosClient.post('/auth/booking', payload);
-            if (res.data.code === 201) {
+            if ([200, 201].includes(res.data.code)) {
                 alert(`Đã tạo đơn hàng! Vui lòng thanh toán sau. Mã đơn: ${res.data.meta.MaDonHang}`);
                 localStorage.removeItem('bookingTemp');
                 navigate('/profile');

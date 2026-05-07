@@ -254,6 +254,10 @@ export async function changeUserRole(req, res) {
             VaiTro: newRole
         });
 
+        if (newRole === 'Khach') {
+            await accountModel.ensureCustomerProfile(userId);
+        }
+
         return res.status(200).json(
             handleSuccessResponse(200, `Thay đổi role thành "${newRole}" thành công`, {
                 userId,

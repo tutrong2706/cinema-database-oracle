@@ -108,17 +108,71 @@ export async function getOrderItems(maDonHang) {
 }
 
 /**
- * Lấy đơn hàng của khách hàng
+ * Lấy đơn hàng của khách hàng (kèm vé và combo, tính TONGTIEN)
  */
 export async function getCustomerOrders(maNguoiDung) {
-    const sql = `
+    // Lấy danh sách đơn hàng cơ bản
+    const ordersSql = `
         SELECT DH.MaDonHang AS MADONHANG, DH.ThoiGianDat AS THOIGIANDAT, 
-               DH.TongTien AS TONGTIEN, DH.TrangThai AS TRANGTHAI
+               DH.TrangThai AS TRANGTHAI
         FROM DON_HANG DH
         WHERE DH.MaNguoiDung_KH = :1
         ORDER BY DH.ThoiGianDat DESC
     `;
-    return await query(sql, [maNguoiDung]); // Đảm bảo truyền đúng tham số[cite: 1]
+    const orders = await query(ordersSql, [maNguoiDung]);
+    
+    // Enriched each order với tickets và combos
+    const enrichedOrders = await Promise.all(
+        orders.map(async (order) => {
+            // Lấy vé xem phim
+            const ticketsSql = `
+                SELECT V.MaVe AS MAVE,
+                       V.HangGhe AS HANGGHE,
+                       V.SoGhe AS SOGHE,
+                       V.GiaVeCuoi AS GIAVECUOI,
+                       V.TrangThai AS TRANGTHAI,
+                       SC.MaSuatChieu AS MASUATCHIEU,
+                       P.TenPhim AS TENPHIM,
+                       P.Anh AS ANH,
+                       PC.MaPhong AS MAPHONG,
+                       RC.Ten AS TENRAP
+                FROM VE_XEM_PHIM V
+                JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
+                JOIN PHIM P ON SC.MaPhim = P.MaPhim
+                JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
+                JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
+                WHERE V.MaDonHang = :1
+            `;
+            const tickets = await query(ticketsSql, [order.MADONHANG]);
+            
+            // Lấy combo/đồ ăn
+            const combosSql = `
+                SELECT G.MaHang AS MAHANG,
+                       MH.TenHang AS TENHANG,
+                       G.SoLuong AS SOLUONG,
+                       G.DonGia AS DONGIA
+                FROM GOM G
+                JOIN MAT_HANG MH ON G.MaHang = MH.MaHang
+                WHERE G.MaDonHang = :1
+            `;
+            const combos = await query(combosSql, [order.MADONHANG]);
+            
+            // Tính TONGTIEN từ vé + combo
+            const ticketsTotal = tickets.reduce((sum, t) => sum + (parseInt(t.GIAVECUOI) || 0), 0);
+            const combosTotal = combos.reduce((sum, c) => sum + (parseInt(c.DONGIA) * parseInt(c.SOLUONG)), 0);
+            const totalAmount = ticketsTotal + combosTotal;
+            
+            // Format theo structure của ProfilePage
+            return {
+                ...order,
+                TONGTIEN: totalAmount,  // ✅ Tính toán từ items
+                VE_XEM_PHIM: tickets,
+                GOM: combos
+            };
+        })
+    );
+    
+    return enrichedOrders;
 }
 
 /**
