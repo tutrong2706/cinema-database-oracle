@@ -120,10 +120,7 @@ export async function execute(sql, params = []) {
 }
 
 /**
-<<<<<<< Updated upstream
- * Gọi Stored Procedure[cite: 4]
-=======
- * Cháº¡y nhiá»u thao tÃ¡c trong cÃ¹ng má»™t transaction
+ * Chạy nhiều thao tác trong cùng một transaction.
  * @param {(connection: import('oracledb').Connection, oracledb: typeof import('oracledb')) => Promise<any>} work
  * @returns {Promise<any>}
  */
@@ -155,7 +152,6 @@ export async function withTransaction(work) {
  * @param {string} procName - Tên procedure
  * @param {Array} params - Tham số
  * @returns {Promise<Array>} - Kết quả
->>>>>>> Stashed changes
  */
 export async function callProcedure(procName, params = []) {
     let connection;

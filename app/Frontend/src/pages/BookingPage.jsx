@@ -33,7 +33,8 @@ const BookingPage = () => {
     // Fetch ghế đã đặt khi chọn suất chiếu
     useEffect(() => {
         if (selectedSuat) {
-            axiosClient.get(`/auth/tickets`, { params: { MaSuatChieu: selectedSuat.MASUATCHIEU } })
+            // Use the correct endpoint: /suat-chieus/:id/booked-seats to get seats for THIS specific showtime
+            axiosClient.get(`/auth/suat-chieus/${selectedSuat.MASUATCHIEU}/booked-seats`)
                 .then(res => setBookedSeats(res.data.meta || []))
                 .catch(err => console.error('Lỗi tải ghế đã đặt:', err));
         } else {
@@ -213,14 +214,13 @@ const BookingPage = () => {
                                     const num = i + 1;
                                     const isSelected = selectedSeats.some(s => s.HangGhe === row && s.SoGhe === num);
                                     
-                                    // Kiểm tra ghế đã bán từ API
+                                    // Check booked seats from API (now consistently using HANGGHE/SOGHE)
                                     const bookedSeat = bookedSeats.find(s => 
-                                        (s.HangGhe === row || s.HANGGHE === row) && 
-                                        (s.SoGhe === num || s.SOGHE === num)
+                                        s.HANGGHE === row && s.SOGHE === num
                                     );
 
-                                    // Phân loại trạng thái ghế dựa vào dữ liệu Backend trả về
-                                    const isPending = bookedSeat && (bookedSeat.TrangThai === 'Chờ thanh toán' || bookedSeat.TRANGTHAI === 'Chờ thanh toán');
+                                    // Classify seat status based on backend data
+                                    const isPending = bookedSeat && (bookedSeat.TrangThai === 'Chờ thanh toán');
                                     const isSold = bookedSeat && !isPending; // Những trạng thái còn lại (như Đã thanh toán)
                                     const isDisabled = !!bookedSeat; // Cả chờ và đã bán đều khóa không cho người khác click
 

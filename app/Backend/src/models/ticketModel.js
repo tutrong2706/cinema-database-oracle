@@ -58,8 +58,8 @@ export async function getTicketsByUser(maNguoiDung) {
  */
 export async function getBookedSeats(maSuatChieu) {
     const sql = `
-        SELECT HangGhe, SoGhe FROM VE_XEM_PHIM
-        WHERE MaSuatChieu = :1 AND TrangThai IN ('Đã đặt', 'Đã thanh toán')
+        SELECT HangGhe AS HANGGHE, SoGhe AS SOGHE FROM VE_XEM_PHIM
+        WHERE MaSuatChieu = :1 AND TrangThai IN ('Đã đặt', 'Đã thanh toán', 'Chờ thanh toán')
     `;
     return await query(sql, [maSuatChieu]);
 }

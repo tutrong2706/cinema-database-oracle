@@ -1,14 +1,11 @@
 import * as screeningModel from '../models/screeningModel.js';
 import * as ticketModel from '../models/ticketModel.js';
 import * as generalModel from '../models/generalModel.js';
-<<<<<<< Updated upstream
 import * as orderModel from '../models/orderModel.js';
 import { execute } from '../config/database.js';
-=======
 import * as roomModel from '../models/roomModel.js';
 import * as accountModel from '../models/accountModel.js';
 import { withTransaction } from '../config/database.js';
->>>>>>> Stashed changes
 import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
 
 const ORDER_PENDING = 'Chờ thanh toán';
@@ -46,6 +43,39 @@ function normalizeScreeningForPayment(row) {
             },
         },
     };
+}
+
+function calculateOrderTotal(ticketCount, ticketPrice, comboDetails = []) {
+    const ticketsTotal = Number(ticketCount || 0) * Number(ticketPrice || 0);
+    const combosTotal = comboDetails.reduce(
+        (sum, combo) => sum + Number(combo.DonGia || 0) * Number(combo.SoLuong || 0),
+        0
+    );
+
+    return ticketsTotal + combosTotal;
+}
+
+async function addLoyaltyPoints(connection, userId, amount) {
+    const loyaltyPoints = Math.floor(Number(amount || 0) / 1000);
+
+    if (loyaltyPoints <= 0) {
+        return 0;
+    }
+
+    await connection.execute(
+        `UPDATE KHACH_HANG
+         SET DiemTichLuy = NVL(DiemTichLuy, 0) + :points,
+             LoaiThanhVien = CASE
+                 WHEN NVL(DiemTichLuy, 0) + :points >= 5000 THEN 'Platinum'
+                 WHEN NVL(DiemTichLuy, 0) + :points >= 2000 THEN 'Gold'
+                 WHEN NVL(DiemTichLuy, 0) + :points >= 1000 THEN 'Silver'
+                 ELSE 'Bronze'
+             END
+         WHERE MaNguoiDung = :userId`,
+        { points: loyaltyPoints, userId }
+    );
+
+    return loyaltyPoints;
 }
 
 async function buildOrderDetail(connection, userId, orderId, oracledb) {
@@ -235,18 +265,13 @@ export async function createBooking(req, res) {
 
         const roomSeats = await roomModel.getRoomSeats(MaPhong);
         const seatMap = new Set(roomSeats.map((seat) => `${seat.HANGGHE ?? seat.HangGhe}-${seat.SOGHE ?? seat.SoGhe}`));
-        const bookedSeats = await ticketModel.getBookedSeats(MaSuatChieu);
-        const bookedSeatMap = new Set(bookedSeats.map((seat) => `${seat.HANGGHE ?? seat.HangGhe}-${seat.SOGHE ?? seat.SoGhe}`));
 
+        // Validate seats requested
         const uniqueSeatMap = new Set();
         for (const seat of DanhSachGhe) {
             const seatKey = `${seat.HangGhe}-${seat.SoGhe}`;
             if (!seatMap.has(seatKey)) {
                 return res.status(400).json(handleErrorResponse(400, `Ghế ${seat.HangGhe}${seat.SoGhe} không tồn tại trong phòng`));
-            }
-
-            if (bookedSeatMap.has(seatKey)) {
-                return res.status(400).json(handleErrorResponse(400, `Ghế ${seat.HangGhe}${seat.SoGhe} đã được đặt`));
             }
 
             if (uniqueSeatMap.has(seatKey)) {
@@ -273,12 +298,49 @@ export async function createBooking(req, res) {
 
         const maDonHang = makeId('DH');
         const orderStatus = ORDER_PENDING;
+        const orderTotal = calculateOrderTotal(
+            DanhSachGhe.length,
+            screening.GIAVECOBAN,
+            comboDetails
+        );
 
         const result = await withTransaction(async (connection, oracledb) => {
+            // Khóa suất chiếu để serialize các booking cùng một suất chiếu.
+            await connection.execute(
+                `SELECT MaSuatChieu
+                 FROM SUAT_CHIEU
+                 WHERE MaSuatChieu = :1
+                 FOR UPDATE`,
+                [MaSuatChieu],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            // ⚡ CRITICAL: Check ghế bị mua ĐÃ TRONG transaction để tránh race condition
+            // Nếu người khác mua cùng lúc, check này sẽ phát hiện
+            const bookedSeatsInTransaction = await connection.execute(
+                `SELECT HangGhe, SoGhe 
+                 FROM VE_XEM_PHIM 
+                 WHERE MaSuatChieu = :1 AND (TrangThai = :2 OR TrangThai = :3)`,
+                [MaSuatChieu, TICKET_BOOKED, TICKET_PAID],
+                { outFormat: oracledb.OUT_FORMAT_OBJECT }
+            );
+
+            const bookedSeatMapInTransaction = new Set(
+                (bookedSeatsInTransaction.rows || []).map((seat) => `${seat.HANGGHE ?? seat.HangGhe}-${seat.SOGHE ?? seat.SoGhe}`)
+            );
+
+            // Check lại trong transaction - nếu có ghế bị mua, reject
+            for (const seat of DanhSachGhe) {
+                const seatKey = `${seat.HangGhe}-${seat.SoGhe}`;
+                if (bookedSeatMapInTransaction.has(seatKey)) {
+                    throw new Error(`SEAT_ALREADY_BOOKED:${seat.HangGhe}${seat.SoGhe}`);
+                }
+            }
+
             await connection.execute(
                 `INSERT INTO DON_HANG (MaDonHang, MaNguoiDung_KH, PhuongThuc, TongTien, TrangThai)
                  VALUES (:1, :2, :3, :4, :5)`,
-                [maDonHang, userId, PAYMENT_METHOD, 0, orderStatus]
+                [maDonHang, userId, PAYMENT_METHOD, orderTotal, orderStatus]
             );
 
             for (const seat of DanhSachGhe) {
@@ -316,15 +378,6 @@ export async function createBooking(req, res) {
                 );
             }
 
-            const totalResult = await connection.execute(
-                `SELECT TongTien AS TONGTIEN
-                 FROM DON_HANG
-                 WHERE MaDonHang = :1`,
-                [maDonHang],
-                { outFormat: oracledb.OUT_FORMAT_OBJECT }
-            );
-            const tongTien = Number(totalResult.rows?.[0]?.TONGTIEN || 0);
-
             if (!isPayLater) {
                 await connection.execute(
                     `INSERT INTO THANH_TOAN (
@@ -334,7 +387,7 @@ export async function createBooking(req, res) {
                         TrangThai,
                         SoTien
                     ) VALUES (:1, :2, :3, :4, :5)`,
-                    [makeId('TT'), maDonHang, PAYMENT_METHOD, PAYMENT_PAID, tongTien]
+                    [makeId('TT'), maDonHang, PAYMENT_METHOD, PAYMENT_PAID, orderTotal]
                 );
 
                 await connection.execute(
@@ -351,6 +404,8 @@ export async function createBooking(req, res) {
                        AND TrangThai = :3`,
                     [TICKET_PAID, maDonHang, TICKET_BOOKED]
                 );
+
+                await addLoyaltyPoints(connection, userId, orderTotal);
             }
 
             return buildOrderDetail(connection, userId, maDonHang, oracledb);
@@ -358,6 +413,11 @@ export async function createBooking(req, res) {
 
         return res.status(200).json(handleSuccessResponse(200, 'Đặt vé thành công', result));
     } catch (error) {
+        // Handle race condition: seat already booked by another customer
+        if (error.message?.startsWith('SEAT_ALREADY_BOOKED:')) {
+            const seatInfo = error.message.replace('SEAT_ALREADY_BOOKED:', '');
+            return res.status(409).json(handleErrorResponse(409, `❌ Ghế ${seatInfo} đã bị khách khác mua! Vui lòng chọn ghế khác.`));
+        }
         return res.status(500).json(handleErrorResponse(500, error.message));
     }
 }
@@ -429,6 +489,34 @@ export async function payOrder(req, res) {
                 throw new Error('ORDER_ALREADY_CANCELLED');
             }
 
+            let payableAmount = Number(order.TONGTIEN || 0);
+            if (payableAmount <= 0) {
+                const ticketTotalResult = await connection.execute(
+                    `SELECT COUNT(*) AS SOLUONG, NVL(MAX(SC.GiaVeCoBan), 0) AS GIAVECOBAN
+                     FROM VE_XEM_PHIM V
+                     JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
+                     WHERE V.MaDonHang = :1`,
+                    [id],
+                    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+                );
+
+                const comboTotalResult = await connection.execute(
+                    `SELECT NVL(SUM(SoLuong * DonGia), 0) AS TONGCOMBO
+                     FROM GOM
+                     WHERE MaDonHang = :1`,
+                    [id],
+                    { outFormat: oracledb.OUT_FORMAT_OBJECT }
+                );
+
+                const ticketRow = ticketTotalResult.rows?.[0] || {};
+                const comboRow = comboTotalResult.rows?.[0] || {};
+                payableAmount = calculateOrderTotal(
+                    Number(ticketRow.SOLUONG || 0),
+                    Number(ticketRow.GIAVECOBAN || 0),
+                    [{ DonGia: Number(comboRow.TONGCOMBO || 0), SoLuong: 1 }]
+                );
+            }
+
             const paymentResult = await connection.execute(
                 `SELECT MaThanhToan
                  FROM THANH_TOAN
@@ -445,7 +533,7 @@ export async function payOrder(req, res) {
                          SoTien = :3,
                          NgayThanhToan = SYSTIMESTAMP
                      WHERE MaDonHang = :4`,
-                    [PAYMENT_PAID, PAYMENT_METHOD, Number(order.TONGTIEN || 0), id]
+                    [PAYMENT_PAID, PAYMENT_METHOD, payableAmount, id]
                 );
             } else {
                 await connection.execute(
@@ -456,7 +544,7 @@ export async function payOrder(req, res) {
                         TrangThai,
                         SoTien
                     ) VALUES (:1, :2, :3, :4, :5)`,
-                    [makeId('TT'), id, PAYMENT_METHOD, PAYMENT_PAID, Number(order.TONGTIEN || 0)]
+                    [makeId('TT'), id, PAYMENT_METHOD, PAYMENT_PAID, payableAmount]
                 );
             }
 
@@ -474,6 +562,9 @@ export async function payOrder(req, res) {
                    AND TrangThai = :3`,
                 [TICKET_PAID, id, TICKET_BOOKED]
             );
+
+            // ✅ CỘNG ĐIỂM TÍCH LŨY: 1000 VND = 1 điểm
+            await addLoyaltyPoints(connection, userId, payableAmount);
 
             return buildOrderDetail(connection, userId, id, oracledb);
         });
@@ -570,196 +661,3 @@ export async function getUserTickets(req, res) {
  * POST /booking - Tạo đơn hàng mới với vé và combo
  * Body: MaSuatChieu, MaPhong, DanhSachGhe, DanhSachCombo, isPayLater
  */
-export async function createBooking(req, res) {
-    try {
-        const { userId } = req.user;
-        const { MaSuatChieu, MaPhong, DanhSachGhe, DanhSachCombo, isPayLater } = req.body;
-
-        // Validate input
-        if (!MaSuatChieu || !MaPhong || !DanhSachGhe || DanhSachGhe.length === 0) {
-            return res.status(400).json(handleErrorResponse(400, 'MaSuatChieu, MaPhong, và danh sách ghế bắt buộc'));
-        }
-
-        // Lấy thông tin suất chiếu
-        const suat = await screeningModel.getScreeningById(MaSuatChieu);
-        if (!suat) {
-            return res.status(404).json(handleErrorResponse(404, 'Suất chiếu không tồn tại'));
-        }
-
-        // Tính tổng tiền
-        const ticketTotal = DanhSachGhe.length * (suat.GIAVECOBAN || 0);
-        let comboTotal = 0;
-        
-        if (DanhSachCombo && DanhSachCombo.length > 0) {
-            for (const combo of DanhSachCombo) {
-                const comboItem = await generalModel.getComboById(combo.MaHang);
-                if (comboItem) {
-                    comboTotal += (comboItem.DONGIA || 0) * (combo.SoLuong || 1);
-                }
-            }
-        }
-
-        const totalPrice = ticketTotal + comboTotal;
-
-        // Tạo mã đơn hàng
-        const maDonHang = `DH_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-
-        const orderStatus = 'Chờ thanh toán';
-
-        // Tạo đơn hàng
-        await orderModel.createOrder({
-            MaDonHang: maDonHang,
-            MaNguoiDung_KH: userId,
-            PhuongThuc: 'Trực tuyến',
-            TongTien: totalPrice, // Để 0 cho Oracle tự tính
-            TrangThai: 'Chờ thanh toán' // BƯỚC 1: LUÔN ÉP CỨNG LÀ CHỜ THANH TOÁN
-        });
-
-        // Tạo vé cho mỗi ghế
-        for (const ghe of DanhSachGhe) {
-            // 🛠 SỬA TẠI ĐÂY: Đảm bảo sinh chuỗi ID hợp lệ và không quá 20 ký tự
-            const thoiGian = String(Date.now()).slice(-6); // Lấy 6 số cuối timestamp
-            const ngauNhien = Math.floor(Math.random() * 1000); // Thêm số ngẫu nhiên 3 chữ số
-            const maVe = `V${thoiGian}${ngauNhien}`; // Ví dụ: V84123456 (Tổng 10 ký tự, rất an toàn)
-
-            // Gọi Model để insert vào DB
-            await ticketModel.createTicket({
-                MaVe: maVe, // Chắc chắn không NULL
-                MaSuatChieu: MaSuatChieu,
-                MaPhong: MaPhong,
-                HangGhe: ghe.HangGhe,
-                SoGhe: ghe.SoGhe,
-                MaNguoiDung_KH: userId,
-                MaDonHang: maDonHang,
-                GiaVeCuoi: suat.GIAVECOBAN,
-                TrangThai: orderStatus
-            });
-        }
-
-        // Thêm combo vào đơn hàng nếu có
-        if (DanhSachCombo && DanhSachCombo.length > 0) {
-            for (const combo of DanhSachCombo) {
-                const comboItem = await generalModel.getComboById(combo.MaHang);
-                if (comboItem) {
-                    await orderModel.addOrderItem(
-                        maDonHang,
-                        combo.MaHang,
-                        combo.SoLuong || 1,
-                        comboItem.DONGIA || 0
-                    );
-                }
-            }
-        }
-
-        // BƯỚC 2: CÚ CHỐT HẠ KÍCH HOẠT TRIGGER
-        // Sau khi Insert xong hết, Oracle đã cộng đủ Tổng Tiền.
-        // Nếu khách KHÔNG chọn thanh toán sau (tức là thanh toán ngay) -> Gọi Update!
-        if (!isPayLater) {
-            // Lệnh Update này sẽ đánh thức toàn bộ Trigger: Cộng điểm, ghi lịch sử, đổi trạng thái vé!
-            await orderModel.updateOrderStatus(maDonHang, 'Đã thanh toán');
-        }
-
-        // Chỉnh lại response trả về cho đúng
-        const finalStatus = isPayLater ? 'Chờ thanh toán' : 'Đã thanh toán';
-        return res.status(201).json(handleSuccessResponse(201, 'Tạo đơn hàng thành công', {
-            MaDonHang: maDonHang,
-            TrangThai: finalStatus
-        }));
-    } catch (error) {
-        console.error('❌ Error creating booking:', error);
-        return res.status(500).json(handleErrorResponse(500, error.message));
-    }
-}
-
-/**
- * POST /orders/:id/pay - Thanh toán đơn hàng cũ (Từ tính năng Thanh Toán Sau)
- */
-export async function payOrder(req, res) {
-    try {
-        const { id } = req.params;
-
-        // Kiểm tra đơn hàng tồn tại
-        const order = await orderModel.getOrderById(id);
-        if (!order) {
-            return res.status(404).json(handleErrorResponse(404, 'Đơn hàng không tồn tại'));
-        }
-
-        if (order.TRANGTHAI === 'Đã thanh toán') {
-            return res.status(400).json(handleErrorResponse(400, 'Đơn hàng đã được thanh toán rồi'));
-        }
-
-        // 1. Cập nhật trạng thái đơn hàng -> Đã thanh toán
-        await orderModel.updateOrderStatus(id, 'Đã thanh toán');
-
-        // 2. Cập nhật trạng thái các vé liên quan -> Đã thanh toán
-        const ticketsOfOrder = await ticketModel.getTicketsByOrder(id);
-        for (const ticket of ticketsOfOrder) {
-            await ticketModel.updateTicketStatus(ticket.MAVE, 'Đã thanh toán');
-        }
-
-        // 3. GHI NHẬN LỊCH SỬ THANH TOÁN (Khắc phục lỗi mất đơn hàng ở báo cáo)
-        const maThanhToan = `TT_${String(Date.now()).slice(-6)}_${Math.floor(Math.random() * 1000)}`;
-        await execute(`
-            INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, PhuongThuc, TrangThai, SoTien)
-            VALUES (:1, :2, :3, 'Đã thanh toán', :4)
-        `, [maThanhToan, id, order.PHUONGTHUC || 'Trực tuyến', order.TONGTIEN]);
-
-        // 4. CỘNG ĐIỂM TÍCH LŨY (Tỉ lệ 10.000 VNĐ = 1 điểm)
-        const diemCong = Math.round((order.TONGTIEN || 0) / 10000);
-        await execute(`
-            UPDATE KHACH_HANG 
-            SET DiemTichLuy = NVL(DiemTichLuy, 0) + :1
-            WHERE MaNguoiDung = :2
-        `, [diemCong, order.MANGUOIDUNG]);
-        
-        // 5. TỰ ĐỘNG XÉT THĂNG HẠNG THÀNH VIÊN
-        await execute(`
-            UPDATE KHACH_HANG
-            SET LoaiThanhVien = CASE 
-                WHEN DiemTichLuy >= 1000 THEN 'Platinum'
-                WHEN DiemTichLuy >= 500  THEN 'Gold'
-                WHEN DiemTichLuy >= 200  THEN 'Silver'
-                ELSE 'Bronze'
-            END
-            WHERE MaNguoiDung = :1
-        `, [order.MANGUOIDUNG]);
-
-        return res.status(200).json(handleSuccessResponse(200, 'Thanh toán đơn hàng cũ thành công!'));
-    } catch (error) {
-        console.error('❌ Error paying order:', error);
-        return res.status(500).json(handleErrorResponse(500, error.message));
-    }
-}
-
-/**
- * POST /orders/:id/cancel - Hủy đơn hàng
- */
-export async function cancelOrder(req, res) {
-    try {
-        const { id } = req.params;
-
-        // Kiểm tra đơn hàng tồn tại
-        const order = await orderModel.getOrderById(id);
-        if (!order) {
-            return res.status(404).json(handleErrorResponse(404, 'Đơn hàng không tồn tại'));
-        }
-
-        if (order.TRANGTHAI === 'Hủy' || order.TRANGTHAI === 'Đã thanh toán') {
-            return res.status(400).json(handleErrorResponse(400, 'Không thể hủy đơn hàng này'));
-        }
-
-        // Cập nhật trạng thái đơn hàng
-        await orderModel.updateOrderStatus(id, 'Hủy');
-
-        // Cập nhật trạng thái vé liên quan
-        const ticketsOfOrder = await ticketModel.getTicketsByOrder(id);
-        for (const ticket of ticketsOfOrder) {
-            await ticketModel.updateTicketStatus(ticket.MAVE, 'Hủy');
-        }
-
-        return res.status(200).json(handleSuccessResponse(200, 'Hủy đơn hàng thành công'));
-    } catch (error) {
-        console.error('❌ Error canceling order:', error);
-        return res.status(500).json(handleErrorResponse(500, error.message));
-    }
-}

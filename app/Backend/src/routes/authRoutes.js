@@ -6,7 +6,7 @@ import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
 import { handleSuccessResponse, handleErrorResponse } from '../helpers/responseHandler.js';
 import { getMyOrders } from '../controllers/orderController.js';
-import { getOrderById } from '../controllers/orderController.js'
+import { getOrderById } from '../controllers/orderController.js';
 const router = express.Router();
 
 /**
@@ -188,7 +188,6 @@ router.get('/suat-chieus/:id/seats', bookingController.getSeatMap);
  */
 
 // GET /auth/profile - Lấy thông tin profile
-router.post('/booking', authenticateToken, bookingController.createBooking);
 router.get('/profile', authenticateToken, authController.getProfile);
 
 // PUT /auth/profile/:userId - Cập nhật profile
@@ -196,8 +195,6 @@ router.put('/profile/:userId', authenticateToken, authController.updateProfile);
 
 // POST /auth/booking - Tạo đơn hàng mới
 router.post('/booking', authenticateToken, bookingController.createBooking);
-
-<<<<<<< Updated upstream
 // GET /auth/orders - Lấy đơn hàng của user
 router.get('/orders', authenticateToken, getMyOrders);
 
@@ -208,11 +205,6 @@ router.get('/orders/:id', authenticateToken, getOrderById);
 router.post('/orders/:id/pay', authenticateToken, bookingController.payOrder);
 
 // POST /auth/orders/:id/cancel - Hủy đơn hàng
-=======
-// GET /auth/orders/:id - Lấy chi tiết đơn hàng
-router.get('/orders/:id', authenticateToken, bookingController.getOrderDetail);
-router.post('/orders/:id/pay', authenticateToken, bookingController.payOrder);
->>>>>>> Stashed changes
 router.post('/orders/:id/cancel', authenticateToken, bookingController.cancelOrder);
 
 // GET /auth/tickets - Lấy vé của user

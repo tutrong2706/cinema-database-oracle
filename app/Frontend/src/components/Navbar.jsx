@@ -61,7 +61,7 @@ const Navbar = () => {
                                 onClick={() => setShowDropdown(!showDropdown)}
                             >
                                 {/* Avatar */}
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                                <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">
                                     {user.hoTen ? user.hoTen.charAt(0) : 'U'}
                                 </div>
                                 <span className="hidden sm:block text-sm font-semibold text-gray-200">
@@ -83,7 +83,7 @@ const Navbar = () => {
                                     
                                     <button
                                         onClick={handleProfileClick}
-                                        className="w-full text-left px-4 py-3 !bg-black text-white hover:bg-gray-800 hover:text-[#00E5FF] transition flex items-center gap-3"
+                                        className="w-full text-left px-4 py-3 bg-black! text-white hover:bg-gray-800 hover:text-[#00E5FF] transition flex items-center gap-3"
                                     >
                                         <span className="text-lg">👤</span>
                                         Trang Cá Nhân
@@ -95,7 +95,7 @@ const Navbar = () => {
                                                 handleLogout();
                                                 setShowDropdown(false);
                                             }}
-                                            className="w-full text-left px-4 py-3 !bg-black text-white hover:bg-red-900 hover:text-red-500 transition flex items-center gap-3"   
+                                            className="w-full text-left px-4 py-3 bg-black! text-white hover:bg-red-900 hover:text-red-500 transition flex items-center gap-3"   
                                         >
                                             {/* Icon Đăng Xuất - Thay emoji bằng SVG */}
                                             <svg 

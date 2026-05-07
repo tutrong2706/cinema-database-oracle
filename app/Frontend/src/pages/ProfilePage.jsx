@@ -11,6 +11,7 @@ const ProfilePage = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState({});
     const [isSaving, setIsSaving] = useState(false);
+    const [expandedOrder, setExpandedOrder] = useState(null); // Track which order is expanded
 
     // Helper function to format dates
     const formatDate = (dateValue) => {
@@ -305,69 +306,96 @@ const ProfilePage = () => {
                     {/* Transaction History */}
                     <div className="bg-gray-800 rounded-3xl shadow-2xl p-8 mb-8 border border-gray-700">
                         <h3 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-4">Lịch Sử Giao Dịch</h3>
-                        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                             {history.length === 0 ? (
                                 <p className="text-gray-400 text-center py-8">Chưa có giao dịch nào.</p>
                             ) : (
                                 history.map((order) => (
-                                    <div key={order.MADONHANG} className="bg-gray-700/50 rounded-xl p-5 border border-gray-600 hover:border-[#00E5FF] transition">
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div>
-                                                <p className="text-[#00E5FF] font-bold text-lg">#{order.MADONHANG}</p>
-                                                <p className="text-gray-400 text-sm">{formatDate(order.THOIGIANDAT)}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-white font-bold text-xl">{parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ</p>
-                                                <span 
-                                                    onClick={() => {
-                                                        if (order.TRANGTHAI === 'Chờ thanh toán') {
-                                                            navigate(`/payment?orderId=${order.MADONHANG}`);
-                                                        }
-                                                    }}
-                                                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold mt-1 cursor-pointer ${
-                                                    order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400' :
-                                                    order.TRANGTHAI === 'Hủy' ? 'bg-red-500/20 text-red-400' :
-                                                    'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/40'
-                                                }`}>
-                                                    {order.TRANGTHAI} {order.TRANGTHAI === 'Chờ thanh toán' && '(Thanh toán ngay)'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        
-                                        {/* Tickets */}
-                                        {order.VE_XEM_PHIM && order.VE_XEM_PHIM.length > 0 && (
-                                            <div className="mb-3">
-                                                <p className="text-gray-300 font-semibold text-sm mb-2">Vé xem phim:</p>
-                                                <div className="space-y-2">
-                                                    {order.VE_XEM_PHIM.map((ve, idx) => (
-                                                        <div key={idx} className="flex justify-between text-sm bg-gray-800/50 p-2 rounded">
-                                                            <div>
-                                                                <p className="text-white font-medium">{ve.TRAPHIM?.TENPHIM}</p>
-                                                                <p className="text-gray-400 text-xs">
-                                                                    {ve.SUATCHIEU?.PHONGCHIEU?.RATCHIEOPHIM?.TEN} - {ve.SUATCHIEU?.PHONGCHIEU?.TEN}
-                                                                </p>
-                                                                <p className="text-gray-400 text-xs">
-                                                                    Ghế: {ve.HANGGHE}{ve.SOGHE}
-                                                                </p>
-                                                            </div>
-                                                            <p className="text-gray-300">{parseInt(ve.GIAVECUOI).toLocaleString('vi-VN')} đ</p>
-                                                        </div>
-                                                    ))}
+                                    <div key={order.MADONHANG}>
+                                        {/* Order Header - Always Visible */}
+                                        <div 
+                                            onClick={() => setExpandedOrder(expandedOrder === order.MADONHANG ? null : order.MADONHANG)}
+                                            className="bg-gradient-to-r from-gray-700/50 to-gray-600/30 rounded-xl p-5 border border-gray-600 hover:border-[#00E5FF] transition cursor-pointer"
+                                        >
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex-1">
+                                                    <p className="text-[#00E5FF] font-bold text-lg">#{order.MADONHANG}</p>
+                                                    <p className="text-gray-400 text-sm">{formatDate(order.THOIGIANDAT)}</p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-white font-bold text-2xl">{parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ</p>
+                                                    <span 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            if (order.TRANGTHAI === 'Chờ thanh toán') {
+                                                                navigate(`/payment?orderId=${order.MADONHANG}`);
+                                                            }
+                                                        }}
+                                                        className={`inline-block px-3 py-1 rounded-full text-xs font-bold mt-2 cursor-pointer transition ${
+                                                        order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400 hover:bg-green-500/40' :
+                                                        order.TRANGTHAI === 'Hủy' ? 'bg-red-500/20 text-red-400 hover:bg-red-500/40' :
+                                                        'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/40'
+                                                    }`}>
+                                                        {order.TRANGTHAI} {order.TRANGTHAI === 'Chờ thanh toán' && '(Thanh toán)'}
+                                                    </span>
+                                                </div>
+                                                <div className="ml-4 text-gray-400 text-2xl">
+                                                    {expandedOrder === order.MADONHANG ? '▼' : '▶'}
                                                 </div>
                                             </div>
-                                        )}
+                                        </div>
 
-                                        {/* Items */}
-                                        {order.GOM && order.GOM.length > 0 && (
-                                            <div>
-                                                <p className="text-gray-300 font-semibold text-sm mb-2">Đồ ăn & Thức uống:</p>
-                                                <div className="space-y-2">
-                                                    {order.GOM.map((item, idx) => (
-                                                        <div key={idx} className="flex justify-between text-sm bg-gray-800/50 p-2 rounded">
-                                                            <p className="text-white">{item.MATHAN?.TENHANG} x{item.SOLUONG}</p>
-                                                            <p className="text-gray-300">{parseInt(item.DONGIA * item.SOLUONG).toLocaleString('vi-VN')} đ</p>
+                                        {/* Order Details - Expanded View */}
+                                        {expandedOrder === order.MADONHANG && (
+                                            <div className="mt-2 bg-gray-800/80 rounded-xl p-5 border border-gray-600 border-t-0 rounded-t-none">
+                                                {/* Tickets */}
+                                                {order.VE_XEM_PHIM && order.VE_XEM_PHIM.length > 0 && (
+                                                    <div className="mb-5">
+                                                        <p className="text-gray-300 font-semibold text-sm mb-3 flex items-center gap-2">
+                                                            <span className="text-lg">🎬</span> Vé xem phim:
+                                                        </p>
+                                                        <div className="space-y-2 ml-2">
+                                                            {order.VE_XEM_PHIM.map((ve, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm bg-gray-900/50 p-3 rounded border border-gray-700">
+                                                                    <div>
+                                                                        <p className="text-white font-medium text-base">{ve.TENPHIM || 'N/A'}</p>
+                                                                        <p className="text-gray-400 text-xs mt-1">
+                                                                            🏢 {ve.TENRAP || 'N/A'} - {ve.MAPHONG || 'N/A'}
+                                                                        </p>
+                                                                        <p className="text-[#00E5FF] text-sm font-bold mt-1">
+                                                                            Ghế: {ve.HANGGHE}{ve.SOGHE}
+                                                                        </p>
+                                                                    </div>
+                                                                    <p className="text-yellow-400 font-bold text-lg">{parseInt(ve.GIAVECUOI).toLocaleString('vi-VN')} đ</p>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
+                                                    </div>
+                                                )}
+
+                                                {/* Combos */}
+                                                {order.GOM && order.GOM.length > 0 && (
+                                                    <div className="mb-4">
+                                                        <p className="text-gray-300 font-semibold text-sm mb-3 flex items-center gap-2">
+                                                            <span className="text-lg">🍿</span> Đồ ăn & Thức uống:
+                                                        </p>
+                                                        <div className="space-y-2 ml-2">
+                                                            {order.GOM.map((item, idx) => (
+                                                                <div key={idx} className="flex justify-between text-sm bg-gray-900/50 p-3 rounded border border-gray-700">
+                                                                    <p className="text-white font-medium">{item.TENHANG} <span className="text-gray-400">x{item.SOLUONG}</span></p>
+                                                                    <p className="text-yellow-400 font-bold">{parseInt(item.DONGIA * item.SOLUONG).toLocaleString('vi-VN')} đ</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Total Summary */}
+                                                <div className="pt-4 border-t border-gray-700 mt-4">
+                                                    <div className="flex justify-between items-center">
+                                                        <p className="text-gray-300 font-semibold">💰 Tổng Cộng:</p>
+                                                        <p className="text-[#00E5FF] font-bold text-2xl">{parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         )}
