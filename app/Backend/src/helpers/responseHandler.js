@@ -11,11 +11,39 @@ export function handleSuccessResponse(code = 200, message = 'OK', data = null) {
     };
 }
 
-export function handleErrorResponse(code = 500, message = 'Internal Server Error') {
+/**
+ * Hàm nội bộ: Làm sạch thông báo lỗi từ Oracle
+ */
+function cleanOracleError(errorMessage) {
+    if (!errorMessage) return "Có lỗi hệ thống xảy ra.";
+    let firstLine = errorMessage.split('\n')[0];
+    return firstLine.replace(/ORA-\d+:\s*/, '');
+}
+
+/**
+ * Hàm tạo Error Response thông minh
+ * @param {number} code - HTTP Status Code
+ * @param {string|Error} errorInput - Thông điệp lỗi dạng text hoặc Object Error bắt được từ catch
+ * @param {any} errorData - Dữ liệu bổ sung (meta)
+ */
+export function handleErrorResponse(code = 500, errorInput = 'Internal Server Error', errorData = null) {
+    let finalMessage = errorInput;
+
+    // 1. Tự động trích xuất message nếu truyền vào nguyên một Error Object
+    if (errorInput instanceof Error) {
+        finalMessage = errorInput.message;
+    }
+
+    // 2. Chốt chặn bảo mật: Tự động phát hiện và làm sạch lỗi Oracle
+    if (typeof finalMessage === 'string' && finalMessage.includes('ORA-')) {
+        finalMessage = cleanOracleError(finalMessage);
+    }
+
+    // 3. Trả về cấu trúc chuẩn của bạn
     return {
         code,
-        message,
-        meta: null,
+        message: finalMessage,
+        meta: errorData,
         timestamp: new Date().toISOString()
     };
 }

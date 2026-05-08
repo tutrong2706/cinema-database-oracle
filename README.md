@@ -176,7 +176,25 @@ VITE_API_URL=http://localhost:3069/api
 
 ---
 
-## 🎯 Features
+## � MongoDB Demo - Optimistic Concurrency Control
+
+Xem demo Optimistic Concurrency Control trên web:
+```bash
+# Truy cập tại (sau khi Frontend chạy)
+http://localhost:5173/mongo-demo
+```
+
+**Tính năng demo**:
+- 📖 Lấy booking + version number
+- ✏️ Chỉnh sửa booking
+- ✅ Update với Optimistic Lock (kiểm tra version)
+- ⚠️ Thấy CONFLICT khi 2+ user update cùng lúc
+- 📝 Lịch sử tất cả operations
+
+**Hướng dẫn chi tiết**: [docs/MONGODB_DEMO_GUIDE.md](docs/MONGODB_DEMO_GUIDE.md)  
+**Quick Reference**: [docs/MONGODB_DEMO_QUICK_REFERENCE.md](docs/MONGODB_DEMO_QUICK_REFERENCE.md)
+
+---
 
 ### ✅ Completed
 - Movie management (CRUD)

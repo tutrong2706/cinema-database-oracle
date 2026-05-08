@@ -200,20 +200,29 @@ const AdminPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Chuyển đổi các trường số sang number
-            let dataToSubmit = {
-                ...formData,
-                THOILUONG: parseInt(formData.THOILUONG),
-                DOTUOI: parseInt(formData.DOTUOI)
+            // 1. CHỐT CHẶN NGHIÊM KHẮC: Chuyển đổi Key từ IN HOA (của React State) 
+            // sang chuẩn PascalCase (để Backend đọc được)
+            const payload = {
+                TenPhim: formData.TENPHIM,
+                ThoiLuong: parseInt(formData.THOILUONG),
+                NgonNgu: formData.NGONNGU,
+                QuocGia: formData.QUOCGIA,
+                DaoDien: formData.DAODIEN,
+                DienVienChinh: formData.DIENVIENCHINH,
+                NgayKhoiChieu: formData.NGAYKHOICHIEU,
+                MoTaNoiDung: formData.MOTANOINDUNG,
+                DoTuoi: parseInt(formData.DOTUOI),
+                ChuDePhim: formData.CHUDEPHIM,
+                Anh: formData.ANH
             };
 
-            // Khi tạo mới, bỏ MAPHIM vì sẽ tự sinh trên backend
+            // 2. Gửi đi với dữ liệu đã được làm sạch
             if (!editingPhim) {
-                const { MAPHIM, ...newData } = dataToSubmit;
-                dataToSubmit = newData;
-                await axiosClient.post('/admin/phims', dataToSubmit);
+                // Tạo mới: Không cần gửi MAPHIM vì Backend tự sinh
+                await axiosClient.post('/admin/phims', payload);
             } else {
-                await axiosClient.put(`/admin/phims/${editingPhim.MAPHIM}`, dataToSubmit);
+                // Cập nhật: Truyền MAPHIM vào URL
+                await axiosClient.put(`/admin/phims/${editingPhim.MAPHIM}`, payload);
             }
             
             alert(editingPhim ? "Cập nhật thành công!" : "Thêm mới thành công!");
@@ -237,7 +246,7 @@ const AdminPage = () => {
         // Cài đặt giá trị mặc định cho form thêm mới (MAPHIM sẽ tự sinh)
         setFormData({
             MAPHIM: '', // Will be auto-generated on backend
-            TENPHIM: '', 
+            TENPHIM: 'Ba Con Heo', 
             THOILUONG: 120, // Mặc định 120 phút
             NGONNGU: 'Tiếng Việt', // Mặc định Tiếng Việt
             QUOCGIA: 'Việt Nam', // Mặc định Việt Nam
@@ -247,38 +256,33 @@ const AdminPage = () => {
             MOTANOINDUNG: 'Phim hay', 
             DOTUOI: 13, // Mặc định 13+
             CHUDEPHIM: 'Hành động', // Mặc định thể loại
-            ANH: 'https://via.placeholder.com/300x450?text=Poster'
+            ANH: 'https://tse4.mm.bing.net/th/id/OIP.48nSxMK75Y7Ez_YM_kzqfgHaHa?pid=Api&h=220&P=0'
         });
         setIsModalOpen(true);
     };
     
     const handleAddSuatChieu = async (e) => {
-        e.preventDefault();
-        try {
-            // Remove MASUATCHIEU as it will be auto-generated on backend
-            const { MASUATCHIEU, ...dataToSubmit } = formSuatChieu;
-            dataToSubmit.GIAVECOBAN = parseInt(dataToSubmit.GIAVECOBAN);
-            
-            await axiosClient.post('/admin/suats', dataToSubmit);
-            alert("Thêm suất chiếu thành công!");
-            setIsModalSuatChieuOpen(false);
-            setSelectedRap('');
-            setFormSuatChieu({
-                MASUATCHIEU: '',
-                MAPHIM: '',
-                MAPHONG: '',
-                NGAYCHIEU: new Date().toISOString().split('T')[0],
-                GIOBATDAU: '08:00:00',
-                GIOKETTHUC: '10:30:00',
-                GIAVECOBAN: 120000,
-                TRANGTHAI: 'Đang mở'
-            });
-            fetchSuatchieu();
-        } catch (error) {
-            console.error(error);
-            alert("Lỗi: " + (error.response?.data?.message || error.message));
-        }
-    };
+    e.preventDefault();
+    try {
+        // CHUẨN HÓA PAYLOAD: Chuyển từ IN HOA sang PascalCase
+        const payload = {
+            MaPhim: formSuatChieu.MAPHIM,
+            MaPhong: formSuatChieu.MAPHONG,
+            NgayChieu: formSuatChieu.NGAYCHIEU,
+            GioBatDau: formSuatChieu.GIOBATDAU,
+            GioKetThuc: formSuatChieu.GIOKETTHUC,
+            GiaVeCoBan: parseInt(formSuatChieu.GIAVECOBAN),
+            TrangThai: formSuatChieu.TRANGTHAI
+        };
+        
+        await axiosClient.post('/admin/suats', payload);
+        alert("Thêm suất chiếu thành công!");
+        setIsModalSuatChieuOpen(false);
+        fetchSuatchieu();
+    } catch (error) {
+        alert("Lỗi: " + (error.response?.data?.message || error.message));
+    }
+};
 
     return (
         <div className="min-h-screen bg-gray-950 pt-24 px-6 pb-10">

@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/config/swagger.js';
 import { initialize, testConnection } from './src/config/database.js';
+import { connectMongo, disconnectMongo } from './src/config/mongoService.js';
 import { errorHandler } from './src/middleware/authMiddleware.js';
 import apiRoutes from './src/routes/index.js';
 // Load environment variables
@@ -67,15 +68,24 @@ app.use(errorHandler);
  */
 async function startServer() {
     try {
-        // Test database connection
+        // Test database connection (Oracle)
         await initialize();
         await testConnection();
-        console.log('✓ Database connection verified');
+        console.log('✓ Oracle database connection verified');
+
+        // Connect to MongoDB (optional - will fail gracefully if not available)
+        try {
+            await connectMongo();
+            console.log('✓ MongoDB connection verified');
+        } catch (mongoError) {
+            console.warn('⚠ MongoDB not available (demo disabled):', mongoError.message);
+        }
 
         // Start Express server
         app.listen(PORT, () => {
             console.log(`✓ Server running at http://localhost:${PORT}`);
             console.log(`✓ API base: http://localhost:${PORT}/api`);
+            console.log(`✓ MongoDB demo: http://localhost:${PORT}/api/mongo/booking/demo-info`);
             console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
         });
     } catch (error) {

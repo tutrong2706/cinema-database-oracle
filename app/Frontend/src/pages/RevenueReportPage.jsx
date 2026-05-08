@@ -153,13 +153,13 @@ const RevenueReportPage = () => {
                     <div className="flex bg-gray-900 border border-gray-800 rounded-xl p-1 shadow-lg">
                         <button 
                             onClick={() => setViewMode('movie')}
-                            className={`px-6 py-3 rounded-lg font-bold transition-all ${viewMode === 'movie' ? 'bg-cyan-500 text-black shadow-[0_0_15px_rgba(0,229,255,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-6 py-3 rounded-lg font-bold transition-all ${viewMode === 'movie' ? 'bg-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(0,229,255,0.4)]' : 'text-gray-400 hover:text-white'}`}
                         >
                             🎬 DOANH THU VÉ
                         </button>
                         <button 
                             onClick={() => setViewMode('combo')}
-                            className={`px-6 py-3 rounded-lg font-bold transition-all ${viewMode === 'combo' ? 'bg-amber-500 text-black shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'text-gray-400 hover:text-white'}`}
+                            className={`px-6 py-3 rounded-lg font-bold transition-all ${viewMode === 'combo' ? 'bg-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.4)]' : 'text-gray-400 hover:text-white'}`}
                         >
                             🍿 DOANH THU F&B
                         </button>

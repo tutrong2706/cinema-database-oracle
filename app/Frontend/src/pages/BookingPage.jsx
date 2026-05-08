@@ -33,8 +33,11 @@ const BookingPage = () => {
     // Fetch ghế đã đặt khi chọn suất chiếu
     useEffect(() => {
         if (selectedSuat) {
-            axiosClient.get(`/auth/tickets`, { params: { MaSuatChieu: selectedSuat.MASUATCHIEU } })
-                .then(res => setBookedSeats(res.data.meta || []))
+            // SỬA API ENDPOINT TẠI ĐÂY:
+            // Gọi đúng API lấy ghế ĐÃ ĐẶT CỦA 1 SUẤT CHIẾU CỤ THỂ
+            // (Lưu ý: Thay /auth/suat-chieus bằng tiền tố route thực tế trong file route của bạn nếu khác)
+            axiosClient.get(`/auth/suat-chieus/${selectedSuat.MASUATCHIEU}/booked-seats`)
+                .then(res => setBookedSeats(res.data.meta || res.data.data || []))
                 .catch(err => console.error('Lỗi tải ghế đã đặt:', err));
         } else {
             setBookedSeats([]);
@@ -120,6 +123,38 @@ const BookingPage = () => {
         };
         localStorage.setItem('bookingTemp', JSON.stringify(bookingData));
         navigate('/payment');
+    };
+
+    // MongoDB Booking - Demo Optimistic Concurrency Control
+    const handleMongoBooking = async () => {
+        if (!selectedSuat) return alert("Vui lòng chọn suất chiếu!");
+        if (selectedSeats.length === 0) return alert("Vui lòng chọn ít nhất một ghế!");
+
+        try {
+            const bookingId = `booking_${Date.now()}`;
+            const totalPrice = calculateTotal();
+            const seatList = selectedSeats.map(s => `${s.HangGhe}${s.SoGhe}`).join(', ');
+
+            // 1. Khởi tạo booking trên MongoDB
+            const initRes = await axiosClient.post('/mongo/booking/init', {
+                bookingId,
+                tenPhim: selectedSuat?.TENPHIM || 'Unknown',
+                gheDaDat: selectedSeats.sort((a, b) => a.HangGhe.localeCompare(b.HangGhe) || a.SoGhe - b.SoGhe),
+                tongtien: totalPrice
+            });
+
+            if (initRes.status !== 201) {
+                alert('Lỗi tạo booking trên MongoDB');
+                return;
+            }
+
+            alert(`✅ Booking tạo thành công! (MongoDB)\n\nID: ${bookingId}\nGhế: ${seatList}\nTổng tiền: ${totalPrice.toLocaleString('vi-VN')} VNĐ\n\nVersion: ${initRes.data.meta.__v}`);
+
+            // Có thể chuyển đến trang thanh toán hoặc hiển thị thêm thông tin
+            // navigate('/payment');
+        } catch (error) {
+            alert(`❌ Lỗi MongoDB: ${error.response?.data?.message || error.message}`);
+        }
     };
 
     return (
@@ -291,17 +326,31 @@ const BookingPage = () => {
                                 Giá vé cơ bản: {(selectedSuat?.GIAVECOBAN || 0).toLocaleString('vi-VN')} VNĐ/ghế
                             </p>
                         </div>
-                        <button 
-                            onClick={handleConfirm}
-                            disabled={selectedSeats.length === 0}
-                            className={`px-10 py-3 rounded-xl font-bold transition transform text-lg ${
-                                selectedSeats.length > 0 
-                                ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] !text-black hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30'
-                                : '!bg-gray-700 !text-gray-500 cursor-not-allowed opacity-60'
-                            }`}
-                        >
-                            TIẾP TỤC THANH TOÁN
-                        </button>
+                        <div className="flex gap-4">
+                            <button 
+                                onClick={handleConfirm}
+                                disabled={selectedSeats.length === 0}
+                                className={`px-10 py-3 rounded-xl font-bold transition transform text-lg flex-1 ${
+                                    selectedSeats.length > 0 
+                                    ? 'bg-gradient-to-r from-[#00E5FF] to-[#00D4F7] hover:from-[#00cce6] hover:to-[#00B8D4] !text-black hover:scale-105 shadow-[0_0_25px_rgba(0,229,255,0.6)] border-2 border-[#00E5FF]/30'
+                                    : '!bg-gray-700 !text-gray-500 cursor-not-allowed opacity-60'
+                                }`}
+                            >
+                                TIẾP TỤC THANH TOÁN
+                            </button>
+                            <button 
+                                onClick={handleMongoBooking}
+                                disabled={selectedSeats.length === 0}
+                                className={`px-10 py-3 rounded-xl font-bold transition transform text-lg flex-1 ${
+                                    selectedSeats.length > 0 
+                                    ? 'bg-gradient-to-r from-[#9C27B0] to-[#7B1FA2] hover:from-[#7B1FA2] hover:to-[#6A1B9A] !text-white hover:scale-105 shadow-[0_0_25px_rgba(156,39,176,0.6)] border-2 border-[#9C27B0]/30'
+                                    : '!bg-gray-700 !text-gray-500 cursor-not-allowed opacity-60'
+                                }`}
+                                title="Demo Optimistic Concurrency Control"
+                            >
+                                🍃 MONGODB BOOKING
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

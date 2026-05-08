@@ -8,6 +8,7 @@ import roomRoutes from './roomRoutes.js';
 import cinemaRoutes from './cinemaRoutes.js';
 import promotionRoutes from './promotionRoutes.js';
 import reportRoutes from './reportRoutes.js';
+import mongoRoutes from './mongoRoutes.js';
 
 const router = express.Router();
 
@@ -41,6 +42,9 @@ router.use('/', promotionRoutes);
 
 // Report routes
 router.use('/', reportRoutes);
+
+// MongoDB demo routes (Optimistic Concurrency Control)
+router.use('/mongo', mongoRoutes);
 
 // Health check
 router.get('/health', (req, res) => {

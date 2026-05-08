@@ -109,10 +109,10 @@ export async function createMovie(movieData) {
     const maPhim = `PHIM_${Date.now()}`;
 
     const sql = `
-        INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
-                          DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh)
-        VALUES (:1, :2, :3, :4, :5, :6, :7, :8, :9, :10, :11, :12)
-    `;
+    INSERT INTO PHIM (MaPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
+                      DienVienChinh, NgayKhoiChieu, MoTaNoiDung, DoTuoi, ChuDePhim, Anh)
+    VALUES (:1, :2, :3, :4, :5, :6, :7, TO_DATE(:8, 'YYYY-MM-DD'), :9, :10, :11, :12)
+`; // Sử dụng TO_DATE để ép kiểu chính xác
 
     return await execute(sql, [
         maPhim, TenPhim, ThoiLuong, NgonNgu, QuocGia, DaoDien,
@@ -132,7 +132,7 @@ export async function updateMovie(maPhim, movieData) {
     const sql = `
         UPDATE PHIM
         SET TenPhim = :1, ThoiLuong = :2, NgonNgu = :3, QuocGia = :4, DaoDien = :5,
-            DienVienChinh = :6, NgayKhoiChieu = :7, MoTaNoiDung = :8, DoTuoi = :9,
+            DienVienChinh = :6, NgayKhoiChieu = TO_DATE(:7, 'YYYY-MM-DD'), MoTaNoiDung = :8, DoTuoi = :9,
             ChuDePhim = :10, Anh = :11
         WHERE MaPhim = :12
     `;

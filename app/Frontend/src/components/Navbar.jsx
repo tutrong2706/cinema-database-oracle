@@ -39,6 +39,9 @@ const Navbar = () => {
                 <div className="hidden md:flex items-center gap-8 font-medium text-gray-300">
                     <Link to="/" className="hover:text-[#00E5FF] transition">Home</Link>
                     <Link to="/search" className="hover:text-[#00E5FF] transition">Tìm kiếm nâng cao</Link>
+                    <Link to="/mongo-demo" className="hover:text-purple-400 transition text-purple-300 flex items-center gap-1" title="MongoDB Optimistic Concurrency Demo">
+                         MongoDB Demo
+                    </Link>
                 </div>
 
                 {/* 3. USER INFO */}

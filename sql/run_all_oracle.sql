@@ -206,8 +206,47 @@ BEGIN
     DBMS_OUTPUT.PUT_LINE('✅ Đã reset toàn bộ logic nghiệp vụ (Hạng, Kho, Trạng thái) thành công!');
 END;
 /
+-- 1. Dọn dẹp sạch sẽ dữ liệu cũ của tất cả 59 phòng này để tránh lỗi trùng lặp khóa chính
+DELETE FROM GHE WHERE MaPhong IN (
+    'P001','P002','P003','P004','P005','P006',
+    'PS001','PS002','PS003','PS004','PS005',
+    'PX001','PX002','PX003','PX004','PX005','PX006','PX007','PX008','PX009','PX010',
+    'PX011','PX012','PX013','PX014','PX015','PX016','PX017','PX018','PX019','PX020',
+    'PX021','PX022','PX023','PX024','PX025','PX026','PX027','PX028','PX029','PX030',
+    'PX031','PX032','PX033','PX034','PX035','PX036','PX037','PX038','PX039','PX040',
+    'PX041','PX042','PX043','PX044','PX045','PX046','PX047','PX048'
+);
+
+-- 2. Sinh và chèn đồng loạt 2.360 ghế chuẩn (Sơ đồ 5 hàng x 8 cột)
+INSERT INTO GHE (MaPhong, HangGhe, SoGhe, LoaiGhe)
+SELECT 
+    p.column_value AS MaPhong, 
+    h.hang AS HangGhe, 
+    s.stt AS SoGhe,
+    CASE WHEN h.hang = 'E' THEN 'VIP' ELSE 'Thường' END AS LoaiGhe
+FROM 
+    -- Nguồn 1: Danh sách 59 mã phòng
+    TABLE(sys.odcivarchar2list(
+        'P001','P002','P003','P004','P005','P006',
+        'PS001','PS002','PS003','PS004','PS005',
+        'PX001','PX002','PX003','PX004','PX005','PX006','PX007','PX008','PX009','PX010',
+        'PX011','PX012','PX013','PX014','PX015','PX016','PX017','PX018','PX019','PX020',
+        'PX021','PX022','PX023','PX024','PX025','PX026','PX027','PX028','PX029','PX030',
+        'PX031','PX032','PX033','PX034','PX035','PX036','PX037','PX038','PX039','PX040',
+        'PX041','PX042','PX043','PX044','PX045','PX046','PX047','PX048'
+    )) p,
+    -- Nguồn 2: Khởi tạo 5 hàng ghế (A, B, C, D là Thường, E là VIP)
+    (SELECT 'A' hang FROM DUAL UNION ALL 
+     SELECT 'B' FROM DUAL UNION ALL 
+     SELECT 'C' FROM DUAL UNION ALL 
+     SELECT 'D' FROM DUAL UNION ALL 
+     SELECT 'E' FROM DUAL) h,
+    -- Nguồn 3: Khởi tạo số lượng 8 ghế cho mỗi hàng
+    (SELECT LEVEL stt FROM DUAL CONNECT BY LEVEL <= 8) s;
+
+-- 3. Chốt giao dịch (Xác nhận lưu dữ liệu)
+COMMIT;
 ALTER TRIGGER TRG_VE_CheckThanhToan DISABLE;
-ALTER TRIGGER TRG_VE_CheckGheAvailable DISABLE;
 DROP TRIGGER TRG_VE_UPDATETONGTIEN_INSERT;
 DROP TRIGGER TRG_VE_UPDATETONGTIEN_UPDATE;
 DROP TRIGGER TRG_VE_UPDATETONGTIEN_DELETE;

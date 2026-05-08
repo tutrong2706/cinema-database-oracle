@@ -98,7 +98,13 @@ export async function createScreening(screeningData) {
     const sql = `
         INSERT INTO SUAT_CHIEU (MaSuatChieu, MaPhim, MaPhong, GiaVeCoBan, GioBatDau,
                                GioKetThuc, NgayChieu, TrangThai)
-        VALUES (:1, :2, :3, :4, :5, :6, :7, :8)
+        VALUES (
+            :1, :2, :3, :4, 
+            TO_TIMESTAMP(:5, 'HH24:MI:SS'), -- Ép kiểu giờ bắt đầu
+            TO_TIMESTAMP(:6, 'HH24:MI:SS'), -- Ép kiểu giờ kết thúc
+            TO_DATE(:7, 'YYYY-MM-DD'),      -- Ép kiểu ngày chiếu
+            :8
+        )
     `;
 
     return await execute(sql, [
