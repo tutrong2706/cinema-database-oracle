@@ -87,6 +87,8 @@ async function startServer() {
             console.log(`✓ API base: http://localhost:${PORT}/api`);
             console.log(`✓ MongoDB demo: http://localhost:${PORT}/api/mongo/booking/demo-info`);
             console.log(`✓ Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log("🔥 Đang kết nối tới Port:", process.env.DB_PORT, " - Service:", process.env.DB_SERVICE_NAME);
+            
         });
     } catch (error) {
         console.error('✗ Failed to start server:', error.message);

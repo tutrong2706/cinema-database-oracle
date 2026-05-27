@@ -46,13 +46,13 @@ const ProfilePage = () => {
                     axiosClient.get('/auth/profile'),
                     axiosClient.get('/auth/orders')
                 ]);
-                
+
                 console.log('📋 Profile API Response:', JSON.stringify(profileRes.data, null, 2));
                 console.log('📦 Orders API Response:', JSON.stringify(ordersRes.data, null, 2));
-                
+
                 const userData = profileRes.data.meta;
                 console.log('👤 User data extracted:', JSON.stringify(userData, null, 2));
-                
+
                 setProfile(userData);
                 setEditData({
                     HoTen: userData.HOTEN,
@@ -151,20 +151,19 @@ const ProfilePage = () => {
                             <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${getRankColor(profile.LOAITHANHVIEN)} flex items-center justify-center text-4xl font-bold text-white shadow-xl mb-6`}>
                                 {profile.HOTEN?.charAt(0)?.toUpperCase() || 'U'}
                             </div>
-                            
+
                             {/* Name */}
                             <h2 className="text-3xl font-bold text-white mb-2">{profile.HOTEN}</h2>
-                            
+
                             {/* Role Badge - Show Admin/Customer */}
                             <div className="flex gap-4 items-center mb-4">
-                                <span className={`inline-block px-6 py-2 rounded-full font-bold text-white ${
-                                    profile.VAITRO === 'Admin' 
-                                        ? 'bg-gradient-to-r from-red-600 to-red-700' 
-                                        : 'bg-gradient-to-r from-blue-600 to-blue-700'
-                                } shadow-lg`}>
+                                <span className={`inline-block px-6 py-2 rounded-full font-bold text-white ${profile.VAITRO === 'Admin'
+                                    ? 'bg-gradient-to-r from-red-600 to-red-700'
+                                    : 'bg-gradient-to-r from-blue-600 to-blue-700'
+                                    } shadow-lg`}>
                                     {getRoleDisplay(profile.VAITRO)}
                                 </span>
-                                
+
                                 {/* Member Tier Badge - Only show for customers */}
                                 {profile.VAITRO === 'Khach' && (
                                     <span className={`inline-block px-6 py-2 rounded-full font-bold text-white bg-gradient-to-r ${getRankColor(profile.LOAITHANHVIEN)} shadow-lg`}>
@@ -208,7 +207,7 @@ const ProfilePage = () => {
                                 <input
                                     type="email"
                                     value={editData.Email}
-                                    onChange={(e) => setEditData({...editData, Email: e.target.value})}
+                                    onChange={(e) => setEditData({ ...editData, Email: e.target.value })}
                                     disabled
                                     className="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 opacity-50 cursor-not-allowed"
                                 />
@@ -216,7 +215,7 @@ const ProfilePage = () => {
                                 <p className="text-white text-lg break-all">{profile.EMAIL}</p>
                             )}
                         </div>
-                        
+
                         {/* Phone */}
                         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 hover:border-[#00E5FF] transition">
                             <div className="flex items-center mb-2">
@@ -227,7 +226,7 @@ const ProfilePage = () => {
                                 <input
                                     type="tel"
                                     value={editData.SDT}
-                                    onChange={(e) => setEditData({...editData, SDT: e.target.value})}
+                                    onChange={(e) => setEditData({ ...editData, SDT: e.target.value })}
                                     className="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:border-[#00E5FF] focus:outline-none"
                                     placeholder="Nhập số điện thoại"
                                 />
@@ -235,7 +234,7 @@ const ProfilePage = () => {
                                 <p className="text-white text-lg">{profile.SDT || 'Chưa cập nhật'}</p>
                             )}
                         </div>
-                        
+
                         {/* Address */}
                         <div className="bg-gray-800 rounded-2xl p-6 border border-gray-700 hover:border-[#00E5FF] transition md:col-span-2">
                             <div className="flex items-center mb-2">
@@ -245,7 +244,7 @@ const ProfilePage = () => {
                             {isEditing ? (
                                 <textarea
                                     value={editData.DiaChi}
-                                    onChange={(e) => setEditData({...editData, DiaChi: e.target.value})}
+                                    onChange={(e) => setEditData({ ...editData, DiaChi: e.target.value })}
                                     rows="3"
                                     className="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:border-[#00E5FF] focus:outline-none"
                                     placeholder="Nhập địa chỉ"
@@ -264,7 +263,7 @@ const ProfilePage = () => {
                             {isEditing ? (
                                 <select
                                     value={editData.GioiTinh || ''}
-                                    onChange={(e) => setEditData({...editData, GioiTinh: e.target.value})}
+                                    onChange={(e) => setEditData({ ...editData, GioiTinh: e.target.value })}
                                     className="w-full bg-gray-700 text-white p-2 rounded border border-gray-600 focus:border-[#00E5FF] focus:outline-none"
                                 >
                                     <option value="">Chưa chọn</option>
@@ -310,67 +309,58 @@ const ProfilePage = () => {
                                 <p className="text-gray-400 text-center py-8">Chưa có giao dịch nào.</p>
                             ) : (
                                 history.map((order) => (
-                                    <div key={order.MADONHANG} className="bg-gray-700/50 rounded-xl p-5 border border-gray-600 hover:border-[#00E5FF] transition">
-                                        <div className="flex justify-between items-start mb-4">
+                                    <div key={order.MADONHANG} className="bg-gray-900/50 p-5 rounded-xl border border-gray-700 hover:border-[#00E5FF] transition-all group">
+                                        <div className="flex justify-between items-start mb-3">
                                             <div>
-                                                <p className="text-[#00E5FF] font-bold text-lg">#{order.MADONHANG}</p>
-                                                <p className="text-gray-400 text-sm">{formatDate(order.THOIGIANDAT)}</p>
+                                                {/* Mã đơn hàng */}
+                                                <span className="text-xs font-mono text-gray-500 block mb-1">#{order.MADONHANG}</span>
+
+                                                {/* Thông tin Phim & Rạp (Đã xử lý chống trùng lặp) */}
+                                                <h4 className="text-[#00E5FF] font-bold text-lg group-hover:text-white transition-colors">
+                                                    {order.THONG_TIN_PHIM
+                                                        ? Array.from(new Set(order.THONG_TIN_PHIM.split(', '))).join(', ')
+                                                        : 'Đang cập nhật...'}
+                                                </h4>
                                             </div>
-                                            <div className="text-right">
-                                                <p className="text-white font-bold text-xl">{parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ</p>
-                                                <span 
-                                                    onClick={() => {
-                                                        if (order.TRANGTHAI === 'Chờ thanh toán') {
-                                                            navigate(`/payment?orderId=${order.MADONHANG}`);
-                                                        }
-                                                    }}
-                                                    className={`inline-block px-3 py-1 rounded-full text-xs font-bold mt-1 cursor-pointer ${
-                                                    order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400' :
-                                                    order.TRANGTHAI === 'Hủy' ? 'bg-red-500/20 text-red-400' :
-                                                    'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/40'
-                                                }`}>
-                                                    {order.TRANGTHAI} {order.TRANGTHAI === 'Chờ thanh toán' && '(Thanh toán ngay)'}
+
+                                            <div className="text-right flex flex-col items-end gap-1">
+                                                {/* 1. Tổng tiền */}
+                                                <p className="text-yellow-400 font-black text-lg whitespace-nowrap">
+                                                    {parseInt(order.TONGTIEN).toLocaleString('vi-VN')} đ
+                                                </p>
+
+                                                {/* 2. Trạng thái */}
+                                                <span className={`text-[10px] uppercase px-2 py-0.5 rounded font-bold whitespace-nowrap ${order.TRANGTHAI === 'Đã thanh toán' ? 'bg-green-500/20 text-green-400' :
+                                                    order.TRANGTHAI === 'Chờ thanh toán' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'
+                                                    }`}>
+                                                    {order.TRANGTHAI}
                                                 </span>
+
+                                                {/* Nâng cấp nút THANH TOÁN NGAY: Bỏ ngoặc, giữ nguyên UI đẹp, và SỬA LẠI LOGIC ĐIỀU HƯỚNG */}
+                                                {order.TRANGTHAI === 'Chờ thanh toán' && (
+                                                    <button
+                                                        // TRẢ LẠI ĐÚNG LOGIC CŨ CỦA BẠN TẠI ĐÂY:
+                                                        onClick={() => navigate(`/payment?orderId=${order.MADONHANG}`)}
+                                                        className="mt-1 px-4 py-1.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-[11px] font-bold rounded-lg shadow-lg hover:scale-105 transition-all whitespace-nowrap"
+                                                    >
+                                                        THANH TOÁN NGAY
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
-                                        
-                                        {/* Tickets */}
-                                        {order.VE_XEM_PHIM && order.VE_XEM_PHIM.length > 0 && (
-                                            <div className="mb-3">
-                                                <p className="text-gray-300 font-semibold text-sm mb-2">Vé xem phim:</p>
-                                                <div className="space-y-2">
-                                                    {order.VE_XEM_PHIM.map((ve, idx) => (
-                                                        <div key={idx} className="flex justify-between text-sm bg-gray-800/50 p-2 rounded">
-                                                            <div>
-                                                                <p className="text-white font-medium">{ve.TRAPHIM?.TENPHIM}</p>
-                                                                <p className="text-gray-400 text-xs">
-                                                                    {ve.SUATCHIEU?.PHONGCHIEU?.RATCHIEOPHIM?.TEN} - {ve.SUATCHIEU?.PHONGCHIEU?.TEN}
-                                                                </p>
-                                                                <p className="text-gray-400 text-xs">
-                                                                    Ghế: {ve.HANGGHE}{ve.SOGHE}
-                                                                </p>
-                                                            </div>
-                                                            <p className="text-gray-300">{parseInt(ve.GIAVECUOI).toLocaleString('vi-VN')} đ</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
 
-                                        {/* Items */}
-                                        {order.GOM && order.GOM.length > 0 && (
-                                            <div>
-                                                <p className="text-gray-300 font-semibold text-sm mb-2">Đồ ăn & Thức uống:</p>
-                                                <div className="space-y-2">
-                                                    {order.GOM.map((item, idx) => (
-                                                        <div key={idx} className="flex justify-between text-sm bg-gray-800/50 p-2 rounded">
-                                                            <p className="text-white">{item.MATHAN?.TENHANG} x{item.SOLUONG}</p>
-                                                            <p className="text-gray-300">{parseInt(item.DONGIA * item.SOLUONG).toLocaleString('vi-VN')} đ</p>
-                                                        </div>
-                                                    ))}
-                                                </div>
+
+                                        {/* Phần thông tin bổ sung bên dưới */}
+                                        < div className="flex flex-col gap-1 border-t border-gray-800 pt-3" >
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500">💺 Ghế:</span>
+                                                <span className="text-gray-300 font-semibold">{order.DANH_SACH_GHE || 'N/A'}</span>
                                             </div>
-                                        )}
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-gray-500">📅 Thời gian:</span>
+                                                <span className="text-gray-400">{formatDate(order.THOIGIANDAT)}</span>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))
                             )}
@@ -397,8 +387,8 @@ const ProfilePage = () => {
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

@@ -231,41 +231,9 @@ export async function payOrder(req, res) {
             return res.status(400).json(handleErrorResponse(400, 'Đơn hàng đã được thanh toán rồi'));
         }
 
-        // 1. Cập nhật trạng thái đơn hàng -> Đã thanh toán
+        // CHỐT CHẶN NGHIÊM KHẮC: Chỉ gọi 1 lệnh duy nhất.
+        // Mọi logic cộng điểm, cập nhật vé, thăng hạng để cho Oracle Trigger tự xử lý!
         await orderModel.updateOrderStatus(id, 'Đã thanh toán');
-
-        // 2. Cập nhật trạng thái các vé liên quan -> Đã thanh toán
-        const ticketsOfOrder = await ticketModel.getTicketsByOrder(id);
-        for (const ticket of ticketsOfOrder) {
-            await ticketModel.updateTicketStatus(ticket.MAVE, 'Đã thanh toán');
-        }
-
-        // 3. GHI NHẬN LỊCH SỬ THANH TOÁN (Khắc phục lỗi mất đơn hàng ở báo cáo)
-        const maThanhToan = `TT_${String(Date.now()).slice(-6)}_${Math.floor(Math.random() * 1000)}`;
-        await execute(`
-            INSERT INTO THANH_TOAN (MaThanhToan, MaDonHang, PhuongThuc, TrangThai, SoTien)
-            VALUES (:1, :2, :3, 'Đã thanh toán', :4)
-        `, [maThanhToan, id, order.PHUONGTHUC || 'Trực tuyến', order.TONGTIEN]);
-
-        // 4. CỘNG ĐIỂM TÍCH LŨY (Tỉ lệ 10.000 VNĐ = 1 điểm)
-        const diemCong = Math.round((order.TONGTIEN || 0) / 10000);
-        await execute(`
-            UPDATE KHACH_HANG 
-            SET DiemTichLuy = NVL(DiemTichLuy, 0) + :1
-            WHERE MaNguoiDung = :2
-        `, [diemCong, order.MANGUOIDUNG]);
-        
-        // 5. TỰ ĐỘNG XÉT THĂNG HẠNG THÀNH VIÊN
-        await execute(`
-            UPDATE KHACH_HANG
-            SET LoaiThanhVien = CASE 
-                WHEN DiemTichLuy >= 1000 THEN 'Platinum'
-                WHEN DiemTichLuy >= 500  THEN 'Gold'
-                WHEN DiemTichLuy >= 200  THEN 'Silver'
-                ELSE 'Bronze'
-            END
-            WHERE MaNguoiDung = :1
-        `, [order.MANGUOIDUNG]);
 
         return res.status(200).json(handleSuccessResponse(200, 'Thanh toán đơn hàng cũ thành công!'));
     } catch (error) {

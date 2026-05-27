@@ -112,13 +112,28 @@ export async function getOrderItems(maDonHang) {
  */
 export async function getCustomerOrders(maNguoiDung) {
     const sql = `
-        SELECT DH.MaDonHang AS MADONHANG, DH.ThoiGianDat AS THOIGIANDAT, 
-               DH.TongTien AS TONGTIEN, DH.TrangThai AS TRANGTHAI
+        SELECT 
+            DH.MaDonHang AS MADONHANG, 
+            DH.ThoiGianDat AS THOIGIANDAT, 
+            DH.TongTien AS TONGTIEN, 
+            DH.TrangThai AS TRANGTHAI,
+            -- Lấy thông tin phim và rạp (dùng LISTAGG để gộp nếu có nhiều vé)
+            (SELECT LISTAGG(P.TenPhim || ' (' || RC.Ten || ')', ', ') WITHIN GROUP (ORDER BY P.TenPhim)
+             FROM VE_XEM_PHIM V
+             JOIN SUAT_CHIEU SC ON V.MaSuatChieu = SC.MaSuatChieu
+             JOIN PHIM P ON SC.MaPhim = P.MaPhim
+             JOIN PHONG_CHIEU PC ON SC.MaPhong = PC.MaPhong
+             JOIN RAP_CHIEU_PHIM RC ON PC.MaRapPhim = RC.MaRapPhim
+             WHERE V.MaDonHang = DH.MaDonHang) AS THONG_TIN_PHIM,
+            -- Lấy danh sách ghế
+            (SELECT LISTAGG(V.HangGhe || V.SoGhe, ', ') WITHIN GROUP (ORDER BY V.HangGhe, V.SoGhe)
+             FROM VE_XEM_PHIM V
+             WHERE V.MaDonHang = DH.MaDonHang) AS DANH_SACH_GHE
         FROM DON_HANG DH
         WHERE DH.MaNguoiDung_KH = :1
-        ORDER BY DH.ThoiGianDat DESC
+        ORDER BY DH.ThoiGianDat DESC -- Sắp xếp mới nhất lên đầu
     `;
-    return await query(sql, [maNguoiDung]); // Đảm bảo truyền đúng tham số[cite: 1]
+    return await query(sql, [maNguoiDung]);
 }
 
 /**
